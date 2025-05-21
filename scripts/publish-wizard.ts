@@ -46,8 +46,22 @@ const getPackages = () => {
     execSync("pnpm install", { stdio: "inherit" }); // Update lockfile
   }
 
+  const { isDryRun } = await inquirer.prompt([
+    {
+      name: "isDryRun",
+      type: "confirm",
+      message: "🧪 Dry run? (Will simulate publishing without actual push)",
+      default: false
+    }
+  ]);
+
   for (const pkg of selectedPackages) {
     const pkgDir = path.join(PACKAGES_DIR, pkg);
+    const pkgJson = JSON.parse(readFileSync(path.join(pkgDir, "package.json"), "utf-8"));
+    if (pkgJson.private) {
+      console.log(`🔒 Skipping private package: ${pkg}`);
+      continue;
+    }
     // Check for uncommitted changes in the package
     let isDirty = false;
     try {
@@ -74,10 +88,17 @@ const getPackages = () => {
         process.exit(1);
       }
     }
-    const pkgJson = JSON.parse(readFileSync(path.join(pkgDir, "package.json"), "utf-8"));
+    // Build before publishing
+    try {
+      execSync(`pnpm --filter ${pkg} build`, { stdio: "inherit" });
+    } catch (e) {
+      console.error(`❌ Build failed for ${pkg}`);
+      process.exit(1);
+    }
     const version = pkgJson.version;
     console.log(`🚀 Publishing ${pkg}@${version}...`);
-    execSync(`pnpm publish --filter ./${path.relative(process.cwd(), pkgDir)} --access public --no-git-checks`, { stdio: "inherit" });
+    const publishCmd = `pnpm publish --filter ./${path.relative(process.cwd(), pkgDir)} --access public --no-git-checks${isDryRun ? " --dry-run" : ""}`;
+    execSync(publishCmd, { stdio: "inherit" });
   }
 
   console.log("✅ Done! All selected packages are published.");

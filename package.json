@@ -1,8 +1,7 @@
 {
-  "name": "acf-kit",
+  "name": "acf-kit-monorepo",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "The ideal monorepo toolkit for modern TypeScript projects. Built with ❤️ by CodeIdeal.",
   "private": true,
   "scripts": {
     "dev": "echo 'run dev inside individual packages'",
@@ -12,8 +11,12 @@
     "release": "changeset publish",
     "publish:wizard": "tsx scripts/publish-wizard.ts"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["monorepo", "toolkit", "typescript", "codeideal", "acf-kit"],
+  "author": "Shayan Moradi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/novincode/acf-kit"
+  },
   "license": "ISC",
   "packageManager": "pnpm@10.7.1",
   "dependencies": {

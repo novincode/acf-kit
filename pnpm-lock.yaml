@@ -39,6 +39,17 @@ importers:
 
   packages/core: {}
 
+  packages/meta:
+    dependencies:
+      '@acf-kit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@acf-kit/react':
+        specifier: workspace:*
+        version: link:../react
+
+  packages/react: {}
+
 packages:
 
   '@babel/runtime@7.27.1':
