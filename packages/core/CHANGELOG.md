@@ -1,5 +1,11 @@
 # @acf-kit/core
 
+## 1.1.1
+
+### Patch Changes
+
+- da5aee4: textarea added
+
 ## 1.1.0
 
 ### Minor Changes
