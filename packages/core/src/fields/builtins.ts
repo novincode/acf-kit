@@ -15,10 +15,14 @@ export function registerBooleanField() {
 export function registerDateField() {
   registerFieldType("date", (config: FieldConfig<Date | string>) => new Field<Date | string>(config));
 }
+export function registerTextareaField() {
+  registerFieldType("textarea", (config: FieldConfig<string>) => new Field<string>(config));
+}
 
 // --- Register all built-ins at once (for convenience) ---
 export function registerAllBuiltins() {
   registerTextField();
+  registerTextareaField();
   registerNumberField();
   registerBooleanField();
   registerDateField();

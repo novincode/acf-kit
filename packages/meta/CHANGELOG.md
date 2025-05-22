@@ -1,5 +1,13 @@
 # acf-kit
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [125d7ee]
+  - @acf-kit/core@1.1.0
+  - @acf-kit/react@0.2.0
+
 ## 0.0.4
 
 ### Patch Changes

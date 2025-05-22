@@ -1,6 +1,7 @@
 'use client'
 import Image from "next/image";
-import { Form } from '@acf-kit/core/index';
+import { Form } from "@acf-kit/core";
+
 import { registerAllBuiltins } from "@acf-kit/core/fields/builtins";
 import { useState } from "react";
 
