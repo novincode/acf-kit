@@ -5,6 +5,7 @@ import { validateForm } from "./validation";
 
 /**
  * Form represents a collection of fields, their values, and errors.
+ * Provides methods for value access, validation, and conditional logic.
  */
 export class Form {
   readonly fields: FieldInstances = {};

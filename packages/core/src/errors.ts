@@ -1,10 +1,14 @@
+import { ErrorCodes } from "./constants";
+
 /**
  * Base error for all acf-kit/core logic.
  */
 export class AcfKitError extends Error {
-  constructor(message: string) {
+  code?: string;
+  constructor(message: string, code?: string) {
     super(message);
     this.name = "AcfKitError";
+    this.code = code;
   }
 }
 
@@ -13,7 +17,7 @@ export class AcfKitError extends Error {
  */
 export class FieldTypeError extends AcfKitError {
   constructor(type: string) {
-    super(`Field type "${type}" is not registered or invalid.`);
+    super(`Field type "${type}" is not registered or invalid.`, ErrorCodes.FIELD_TYPE_NOT_REGISTERED);
     this.name = "FieldTypeError";
   }
 }
@@ -23,7 +27,7 @@ export class FieldTypeError extends AcfKitError {
  */
 export class FormConfigError extends AcfKitError {
   constructor(message: string) {
-    super(`Form configuration error: ${message}`);
+    super(`Form configuration error: ${message}`, ErrorCodes.FORM_CONFIG_ERROR);
     this.name = "FormConfigError";
   }
 }
@@ -34,7 +38,7 @@ export class FormConfigError extends AcfKitError {
 export class ValidationError extends AcfKitError {
   field: string;
   constructor(field: string, message: string) {
-    super(`Validation error in "${field}": ${message}`);
+    super(`Validation error in "${field}": ${message}`, ErrorCodes.VALIDATION_ERROR);
     this.name = "ValidationError";
     this.field = field;
   }

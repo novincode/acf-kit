@@ -1,17 +1,11 @@
+import type { FieldTypeConfigMap } from "./fieldTypeMap";
 import type { FieldConfig, FieldType } from "./types";
 import { Field } from "./index";
 
 /**
- * --- Type-safe registry for field types ---
+ * A factory function that creates a Field instance from config.
+ * @template T - The field type key in FieldTypeConfigMap
  */
-export interface FieldTypeConfigMap {
-  repeater: import("./repeater").RepeaterFieldConfig;
-  group: import("./group").GroupFieldConfig;
-  flexible: import("./flexible").FlexibleFieldConfig;
-  // Add more as needed
-  [key: string]: import("./types").FieldConfig<any, any>;
-}
-
 export type FieldFactory<T extends keyof FieldTypeConfigMap = string> = (
   config: FieldTypeConfigMap[T]
 ) => Field<any, any>;
@@ -21,6 +15,8 @@ const fieldRegistry: { [key: string]: FieldFactory<any> } = {};
 
 /**
  * Register a new field type and its factory.
+ * @param type - The field type name
+ * @param factory - The factory function for this field type
  */
 export function registerFieldType<T extends keyof FieldTypeConfigMap>(
   type: T,
@@ -32,6 +28,8 @@ export function registerFieldType<T extends keyof FieldTypeConfigMap>(
 /**
  * Create a Field instance by type and config.
  * Throws if the field type is not registered.
+ * @param type - The field type name
+ * @param config - The config for this field type
  */
 export function createField<T extends keyof FieldTypeConfigMap>(
   type: T,
