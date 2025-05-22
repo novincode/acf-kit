@@ -2,6 +2,7 @@ import type { FormConfig, FieldInstances, FormErrors } from "./types";
 import type { Field, FieldConfig } from "../fields";
 import { createField } from "../fields/registry";
 import { validateForm } from "./validation";
+import { EventEmitter } from "../utils/eventEmitter";
 
 /**
  * Form represents a collection of fields, their values, and errors.
@@ -10,6 +11,7 @@ import { validateForm } from "./validation";
 export class Form {
   readonly fields: FieldInstances = {};
   private errors: FormErrors = {};
+  private emitter = new EventEmitter<FormEvents>();
 
   constructor(config: FormConfig) {
     for (const fieldConfig of config.fields) {
@@ -18,10 +20,21 @@ export class Form {
   }
 
   /**
-   * Set the value of a field.
+   * Subscribe to form events (field:change, field:error, etc)
+   */
+  on<K extends keyof FormEvents>(event: K, cb: (payload: FormEvents[K]) => void) {
+    this.emitter.on(event, cb);
+  }
+  off<K extends keyof FormEvents>(event: K, cb: (payload: FormEvents[K]) => void) {
+    this.emitter.off(event, cb);
+  }
+
+  /**
+   * Set the value of a field and emit change event.
    */
   setValue<T = unknown>(name: string, value: T) {
     this.fields[name]?.setValue(value);
+    this.emitter.emit("field:change", { name, value });
   }
 
   /**
@@ -47,6 +60,10 @@ export class Form {
    */
   validate(): boolean {
     this.errors = validateForm(this.fields);
+    // Emit error events for each field
+    for (const name in this.errors) {
+      this.emitter.emit("field:error", { name, error: this.errors[name] });
+    }
     return Object.keys(this.errors).length === 0;
   }
 
@@ -126,3 +143,8 @@ export class Form {
     return errors;
   }
 }
+
+export type FormEvents = {
+  "field:change": { name: string; value: any };
+  "field:error": { name: string; error: string | undefined };
+};

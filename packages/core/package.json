@@ -1,12 +1,16 @@
 {
   "name": "@acf-kit/core",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./fields/builtins": {
+      "import": "./dist/fields/builtins.js",
+      "types": "./dist/fields/builtins.d.ts"
     }
   },
   "publishConfig": {

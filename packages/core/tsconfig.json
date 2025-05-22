@@ -4,7 +4,8 @@
     "outDir": "./dist",
     "declaration": true,
     "emitDeclarationOnly": false,
-    "composite": false
+    "composite": true,
+    "noEmit": false
   },
   "include": ["src"]
 }
