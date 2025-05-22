@@ -176,112 +176,37 @@ async function main() {
 
   const allPackages = getAllPackages();
 
-  // Only prompt for changesets if there are no pending changesets
+  // 1. Commit all changes (required for changeset publish)
+  const gitStatus = execSync('git status --porcelain').toString().trim();
+  if (gitStatus.length > 0) {
+    log('🔨 Committing all changes before publish...');
+    run('git add .');
+    run('git commit -m "chore: prepare release"');
+  } else {
+    log('✅ Working tree clean, nothing to commit.');
+  }
+
+  // 2. Add a changeset if needed
   const pendingChangesets = getPendingChangesets();
   if (pendingChangesets.length === 0) {
-    const { wantRelease } = await inquirer.prompt([
-      {
-        name: "wantRelease",
-        type: "confirm",
-        message: "Do you want to create a new release (bump version)?",
-        default: true,
-      },
-    ]);
-    if (wantRelease) {
-      const { pkgsToRelease } = await inquirer.prompt([
-        {
-          name: "pkgsToRelease",
-          type: "checkbox",
-          message: "Which packages have changes and need a release?",
-          choices: allPackages.filter((pkg) => !isPrivate(pkg)),
-        },
-      ]);
-      if (!pkgsToRelease.length) {
-        log("❌ No packages selected for release. Exiting.");
-        process.exit(0);
-      }
-      for (const pkg of pkgsToRelease) {
-        const { bumpType, summary } = await inquirer.prompt([
-          {
-            name: "bumpType",
-            type: "list",
-            message: `Select version bump type for ${pkg}:`,
-            choices: ["patch", "minor", "major"],
-            default: "patch",
-          },
-          {
-            name: "summary",
-            type: "input",
-            message: `Enter a summary changelog message for ${pkg}:`,
-            validate: (input) => input.trim().length > 0 || "Summary cannot be empty",
-          },
-        ]);
-        const pkgName = getPackageJson(pkg).name;
-        run(
-          `pnpm exec changeset add --package ${pkgName} --type ${bumpType} --summary "${summary.replace(/"/g, '\"')}"`
-        );
-      }
-      log("✅ Changesets created.\n");
-    } else {
-      log("❌ No pending changesets and no new release requested. Exiting.");
-      process.exit(0);
-    }
-  } else {
-    log("ℹ️  Pending changesets detected, skipping changeset creation.");
-  }
-
-  log("Detected packages: " + allPackages.join(", "));
-
-  const { selectedPackages } = await inquirer.prompt([
-    {
-      name: "selectedPackages",
-      type: "checkbox",
-      message: "📦 Which packages do you want to publish?",
-      choices: allPackages.filter((pkg) => !isPrivate(pkg)),
-      default: allPackages.filter((pkg) => !isPrivate(pkg)),
-    },
-  ]);
-
-  if (!selectedPackages.length) {
-    log("❌ No packages selected. Exiting.");
+    log('🦋 No pending changesets. Run `pnpm changeset` to add one if needed.');
+    log('Exiting.');
     process.exit(0);
+  } else {
+    log('ℹ️  Pending changesets detected, continuing to publish.');
   }
 
-  for (const pkg of selectedPackages) {
-    if (isDirty(pkg)) {
-      const { commitMessage } = await inquirer.prompt([
-        {
-          name: "commitMessage",
-          type: "input",
-          message: `📝 Enter a commit message for ${pkg} (required to publish):`,
-          validate: (input) => input.trim().length > 0 || "Commit message cannot be empty",
-        },
-      ]);
-      try {
-        const pkgDir = path.join(PACKAGES_DIR, pkg);
-        run(`git add ${pkgDir}`);
-        run(`git commit -m "${commitMessage}"`);
-        log(`✅ Changes committed for ${pkg}`);
-      } catch {
-        log(`❌ Failed to commit changes for ${pkg}`);
-        process.exit(1);
-      }
-    }
-    // Build before publishing
-    try {
-      run(`pnpm --filter ${pkg} build`);
-    } catch {
-      log(`❌ Build failed for ${pkg}`);
-      process.exit(1);
-    }
-  }
+  // 3. Version and install
+  log('📦 Running changeset version...');
+  run('pnpm changeset version');
+  run('pnpm install');
 
-  // Always run changeset version and install before publish
-  log("📦 Running changeset version...");
-  run("pnpm changeset version");
-  run("pnpm install");
+  // 4. Build all packages
+  log('🔨 Building all packages...');
+  run('pnpm -r build');
 
-  for (const pkg of selectedPackages) {
+  // 5. Publish all public, non-private packages
+  for (const pkg of allPackages) {
     const pkgJson = getPackageJson(pkg);
     if (pkgJson.private) {
       log(`🔒 Skipping private package: ${pkg}`);
@@ -289,7 +214,9 @@ async function main() {
     }
     const version = pkgJson.version;
     log(`🚀 Publishing ${pkg}@${version}...`);
-    const publishCmd = `pnpm publish --filter ${pkg} --access public --no-git-checks`;
+    const publishCmd = pkgJson.name.startsWith('@')
+      ? `pnpm publish --filter ${pkg} --access public --no-git-checks`
+      : `pnpm publish --filter ${pkg} --no-git-checks`;
     try {
       run(publishCmd);
     } catch {
@@ -298,7 +225,7 @@ async function main() {
     }
   }
 
-  log("✅ Done! All selected packages are published.");
+  log('✅ Done! All public packages are published.');
 }
 
 main().catch((err) => {

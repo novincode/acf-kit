@@ -1,16 +1,16 @@
 {
   "name": "@acf-kit/core",
   "version": "1.0.2",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
     },
     "./fields/builtins": {
-      "import": "./dist/fields/builtins.js",
-      "types": "./dist/fields/builtins.d.ts"
+      "import": "./dist/src/fields/builtins.js",
+      "types": "./dist/src/fields/builtins.d.ts"
     }
   },
   "publishConfig": {
@@ -23,5 +23,8 @@
     "zod": "^3.25.20"
   },
   "devDependencies": {},
-  "peerDependencies": {}
+  "peerDependencies": {},
+  "files": [
+    "dist"
+  ]
 }
