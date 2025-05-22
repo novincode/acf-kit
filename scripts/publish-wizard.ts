@@ -33,25 +33,25 @@ async function main() {
     log("❌ No public packages found.");
     process.exit(1);
   }
-  const { pkg } = await inquirer.prompt([
-    {
-      name: "pkg",
-      type: "list",
-      message: "Select a package to publish:",
-      choices: allPackages,
-    },
-  ]);
-  const pkgJson = getPackageJson(pkg);
-  log(`🚀 Publishing ${pkg}@${pkgJson.version}...`);
-  const publishCmd = pkgJson.name.startsWith("@")
-    ? `pnpm publish --filter ${pkg} --access public --no-git-checks`
-    : `pnpm publish --filter ${pkg} --no-git-checks`;
-  try {
-    run(publishCmd);
-    log("✅ Done!");
-  } catch {
-    log(`❌ Publish failed for ${pkg}`);
-    process.exit(1);
+  const { pkgs } = await inquirer.prompt({
+    name: "pkgs",
+    type: "checkbox",
+    message: "Select package(s) to publish:",
+    choices: allPackages,
+  });
+  for (const pkg of pkgs) {
+    const pkgJson = getPackageJson(pkg);
+    log(`🚀 Publishing ${pkg}@${pkgJson.version}...`);
+    const publishCmd = pkgJson.name.startsWith("@")
+      ? `pnpm publish --filter ${pkg} --access public --no-git-checks`
+      : `pnpm publish --filter ${pkg} --no-git-checks`;
+    try {
+      run(publishCmd);
+      log("✅ Done!");
+    } catch {
+      log(`❌ Publish failed for ${pkg}`);
+      process.exit(1);
+    }
   }
 }
 

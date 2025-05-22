@@ -33,3 +33,6 @@ coverage/
 *.zip
 *.bak
 *.tmp
+
+# TypeScript build info
+*.tsbuildinfo
