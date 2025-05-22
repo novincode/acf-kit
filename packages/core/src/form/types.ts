@@ -1,11 +1,24 @@
-import type { Field } from "../fields";
+import type { Field, FieldConfig } from "../fields";
 
+/**
+ * The shape of a form's fields: map of field name to Field instance.
+ */
+export type FieldInstances = Record<string, Field<any, any>>;
+
+/**
+ * Errors keyed by field name.
+ */
+export type FormErrors = Record<string, string | undefined>;
+
+/**
+ * Config for initializing a form.
+ */
 export interface FormConfig {
-  fields: Field<any>[];
-  // You can add more config options later (e.g., validation, hooks)
+  fields: FieldConfig<any, any>[];
+  // Extendable for future (validation, plugins, etc)
 }
 
-export interface FormInstance {
-  fields: Field<any>[];
-  // Add more state as needed later!
-}
+/**
+ * Function signature for conditional logic.
+ */
+export type ConditionFn = (values: Record<string, unknown>) => boolean;

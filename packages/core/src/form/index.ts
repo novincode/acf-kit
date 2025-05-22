@@ -1,40 +1,127 @@
-import type { FormConfig } from "./types";
-import type { Field } from "../fields";
+import type { FormConfig, FieldInstances, FormErrors } from "./types";
+import type { Field, FieldConfig } from "../fields";
+import { createField } from "../fields/registry";
 import { validateForm } from "./validation";
 
+/**
+ * Form represents a collection of fields, their values, and errors.
+ */
 export class Form {
-  fields: Field<any>[];
-  values: Record<string, any>;
-  errors: Record<string, string>;
+  readonly fields: FieldInstances = {};
+  private errors: FormErrors = {};
 
   constructor(config: FormConfig) {
-    this.fields = config.fields;
-    this.values = {};
-    this.errors = {};
-    // Initialize values with defaults
-    for (const field of this.fields) {
-      this.values[field.config.name] = field.config.defaultValue ?? "";
+    for (const fieldConfig of config.fields) {
+      this.fields[fieldConfig.name] = createField(fieldConfig.type, fieldConfig);
     }
   }
 
-  setValue(name: string, value: any) {
-    this.values[name] = value;
+  /**
+   * Set the value of a field.
+   */
+  setValue<T = unknown>(name: string, value: T) {
+    this.fields[name]?.setValue(value);
   }
 
-  getValue(name: string) {
-    return this.values[name];
+  /**
+   * Get the value of a field.
+   */
+  getValue<T = unknown>(name: string): T | undefined {
+    return this.fields[name]?.getValue();
   }
 
+  /**
+   * Get all current values as a record.
+   */
+  getValues(): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const name in this.fields) {
+      out[name] = this.fields[name].getValue();
+    }
+    return out;
+  }
+
+  /**
+   * Validate the form using all validation rules.
+   */
   validate(): boolean {
-    this.errors = validateForm(this.fields, this.values);
+    this.errors = validateForm(this.fields);
     return Object.keys(this.errors).length === 0;
   }
 
-  getErrors(): Record<string, string> {
-    return this.errors;
+  /**
+   * Get the current errors.
+   */
+  getErrors(): FormErrors {
+    return { ...this.errors };
   }
 
-  getValues(): Record<string, any> {
-    return this.values;
+  /**
+   * Should the field be visible?
+   */
+  isFieldVisible(name: string): boolean {
+    const field = this.fields[name];
+    if (!field) return false;
+    if (typeof field.config.visibleIf === "function") {
+      return field.config.visibleIf(this.getValues());
+    }
+    return true;
+  }
+
+  /**
+   * Should the field be enabled?
+   */
+  isFieldEnabled(name: string): boolean {
+    const field = this.fields[name];
+    if (!field) return false;
+    if (typeof field.config.enabledIf === "function") {
+      return field.config.enabledIf(this.getValues());
+    }
+    return true;
+  }
+
+  /**
+   * Get a record of visible fields only.
+   */
+  getVisibleFields(): Record<string, Field<any, any>> {
+    const result: Record<string, Field<any, any>> = {};
+    for (const name in this.fields) {
+      if (this.isFieldVisible(name)) {
+        result[name] = this.fields[name];
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Get all fields that are currently enabled (based on enabledIf).
+   */
+  getEnabledFields(): FieldInstances {
+    const values = this.getValues();
+    const enabled: FieldInstances = {};
+    for (const name in this.fields) {
+      const field = this.fields[name];
+      const cond = field.config.enabledIf;
+      if (!cond || cond(values)) {
+        enabled[name] = field;
+      }
+    }
+    return enabled;
+  }
+
+  /**
+   * Async validation for all fields in the form.
+   * Returns a map of field name to error (if any).
+   */
+  async validateAsync(): Promise<Record<string, string | undefined>> {
+    const values = this.getValues();
+    const errors: Record<string, string | undefined> = {};
+    for (const [name, field] of Object.entries(this.fields)) {
+      if (!this.isFieldVisible(name)) continue;
+      const error = await field.validateAsync(values);
+      if (error) errors[name] = error;
+    }
+    this.errors = errors;
+    return errors;
   }
 }
