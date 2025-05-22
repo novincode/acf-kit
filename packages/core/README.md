@@ -4,44 +4,50 @@
 
 ---
 
-## Table of Contents
+# 🚀 acf-kit/core
 
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Concepts & Architecture](#concepts--architecture)
-- [Field Types](#field-types)
-- [API Reference](#api-reference)
-- [Extending & Plugins](#extending--plugins)
-- [Validation](#validation)
-- [Error Handling](#error-handling)
-- [Best Practices & Recipes](#best-practices--recipes)
-- [FAQ](#faq)
-- [Contributing](#contributing)
-- [License](#license)
-- [TypeScript & DX Tips](#typescript--dx-tips)
-- [UI Framework Recipes](#ui-framework-recipes)
-- [Testing](#testing)
-- [Roadmap](#roadmap)
-- [Support & Community](#support--community)
+> **A headless, type-safe, extensible field & form engine for modern web frameworks.**
 
 ---
 
-## Introduction
+## 📚 Table of Contents
+
+- [✨ Introduction](#-introduction)
+- [🌟 Features](#-features)
+- [⬇️ Installation](#-installation)
+- [⚡ Quick Start](#-quick-start)
+- [🏗️ Concepts & Architecture](#-concepts--architecture)
+- [🧩 Field Types](#-field-types)
+- [🛠️ API Reference](#-api-reference)
+- [🔌 Extending & Plugins](#-extending--plugins)
+- [✅ Validation](#-validation)
+- [🚨 Error Handling](#-error-handling)
+- [🧑‍🍳 Best Practices & Recipes](#-best-practices--recipes)
+- [❓ FAQ](#-faq)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [💡 TypeScript & DX Tips](#-typescript--dx-tips)
+- [🖼️ UI Framework Recipes](#-ui-framework-recipes)
+- [🧪 Testing](#-testing)
+- [🗺️ Roadmap](#-roadmap)
+- [🌍 Support & Community](#-support--community)
+
+---
+
+## ✨ Introduction
 
 `acf-kit/core` is a modern, framework-agnostic engine for building dynamic, type-safe forms and field systems. Inspired by the best of ACF, Formik, and headless CMSs, it’s designed for:
 
-- **Type safety**: All field values, configs, and errors are fully typed.
-- **Extensibility**: Register new field types, validation, and plugins with ease.
-- **Minimalism**: Only core logic, no UI or framework lock-in.
-- **DX First**: JSDoc, error codes, and a plugin-first architecture for a seamless developer experience.
+- **Type safety** 🛡️: All field values, configs, and errors are fully typed.
+- **Extensibility** 🧩: Register new field types, validation, and plugins with ease.
+- **Minimalism** 🪶: Only core logic, no UI or framework lock-in.
+- **DX First** 💙: JSDoc, error codes, and a plugin-first architecture for a seamless developer experience.
 
 Whether you’re building a CMS, a form builder, or a custom admin, `acf-kit/core` gives you the foundation for robust, maintainable, and scalable forms.
 
 ---
 
-## Features
+## 🌟 Features
 
 - **Type-safe field and form engine**: Built with TypeScript for maximum safety and DX.
 - **Minimal & Modular**: Tree-shakable, import only what you need.
@@ -53,7 +59,7 @@ Whether you’re building a CMS, a form builder, or a custom admin, `acf-kit/cor
 
 ---
 
-## Installation
+## ⬇️ Installation
 
 ```sh
 pnpm add @acf-kit/core
@@ -65,7 +71,7 @@ yarn add @acf-kit/core
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
 ```ts
 import { Form } from "@acf-kit/core";
@@ -91,7 +97,7 @@ if (!form.validate()) {
 
 ---
 
-## Concepts & Architecture
+## 🏗️ Concepts & Architecture
 
 - **Fields**: Each field is a type-safe, extensible unit. Built-in types include text, number, boolean, date, repeater, group, and flexible. Custom types can be registered.
 - **Forms**: A form is a collection of fields, with methods for value access, validation, and conditional logic.
@@ -101,56 +107,56 @@ if (!form.validate()) {
 
 ---
 
-## Field Types
+## 🧩 Field Types
 
 `acf-kit/core` comes with a rich set of built-in field types, all fully type-safe and extensible. You can also register your own custom field types.
 
 ### Built-in Field Types
 
-- **text**: Single-line string input.
+- **text** 📝: Single-line string input.
   ```ts
   { name: "title", type: "text", required: true }
   ```
-- **number**: Numeric input (integer or float).
+- **number** 🔢: Numeric input (integer or float).
   ```ts
   { name: "price", type: "number", min: 0 }
   ```
-- **boolean**: Checkbox or toggle.
+- **boolean** ✅: Checkbox or toggle.
   ```ts
   { name: "isActive", type: "boolean" }
   ```
-- **date**: Date picker.
+- **date** 📅: Date picker.
   ```ts
   { name: "publishedAt", type: "date" }
   ```
-- **select**: Dropdown/select with options.
+- **select** 🔽: Dropdown/select with options.
   ```ts
   { name: "status", type: "select", options: [
     { label: "Draft", value: "draft" },
     { label: "Published", value: "published" }
   ]}
   ```
-- **radio**: Radio button group.
+- **radio** 🔘: Radio button group.
   ```ts
   { name: "gender", type: "radio", options: [
     { label: "Male", value: "m" },
     { label: "Female", value: "f" }
   ]}
   ```
-- **repeater**: Dynamic array of fields (fieldset array).
+- **repeater** ➕: Dynamic array of fields (fieldset array).
   ```ts
   { name: "tags", type: "repeater", fields: [
     { name: "label", type: "text" }
   ]}
   ```
-- **group**: Nested group of fields (object value).
+- **group** 🗂️: Nested group of fields (object value).
   ```ts
   { name: "seo", type: "group", fields: [
     { name: "title", type: "text" },
     { name: "description", type: "text" }
   ]}
   ```
-- **flexible**: Flexible content (array of different layouts).
+- **flexible** 🧬: Flexible content (array of different layouts).
   ```ts
   { name: "content", type: "flexible", layouts: [
     { name: "textBlock", fields: [ { name: "text", type: "text" } ] },
@@ -178,7 +184,7 @@ Once registered, use your custom field type in any form config:
 
 ---
 
-## API Reference
+## 🛠️ API Reference
 
 ### Form
 
@@ -199,7 +205,7 @@ new Form(config: FormConfig)
 
 ---
 
-## Extending & Plugins
+## 🔌 Extending & Plugins
 
 `acf-kit/core` is designed for extensibility. You can register new field types, add custom validation, or hook into form/field events using the plugin system and event emitter.
 
@@ -230,7 +236,7 @@ eventEmitter.on("field:change", (fieldName, value) => {
 
 ---
 
-## Validation
+## ✅ Validation
 
 Validation is flexible and type-safe. You can use built-in validators, add custom sync/async validation, or compose validation logic.
 
@@ -268,7 +274,7 @@ await form.validateAsync(); // returns error map
 
 ---
 
-## Error Handling
+## 🚨 Error Handling
 
 Error handling in `acf-kit/core` is robust and developer-friendly. All error codes are centralized in `constants.ts`, and custom error classes are used for programmatic error handling.
 
@@ -309,7 +315,7 @@ if (errors.username) {
 
 ---
 
-## Best Practices & Recipes
+## 🧑‍🍳 Best Practices & Recipes
 
 ### Dynamic/Nested Forms
 
@@ -355,7 +361,7 @@ anotherPlugin();
 
 ---
 
-## FAQ
+## ❓ FAQ
 
 **Q: What frameworks does this work with?**  
 A: It's framework-agnostic! Use it with React, Vue, Svelte, or even in Node.js apps.
@@ -374,7 +380,7 @@ A: No, this is a headless engine. Use it with your own UI components or framewor
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 - Keep all code type-safe and minimal.
 - Add new field types or plugins via registration.
@@ -383,7 +389,7 @@ A: No, this is a headless engine. Use it with your own UI components or framewor
 
 ---
 
-## License
+## 📄 License
 
 MIT
 
@@ -396,7 +402,7 @@ MIT
 
 ---
 
-## TypeScript & DX Tips
+## 💡 TypeScript & DX Tips
 
 - All APIs are fully typed. Use TypeScript's type inference for field values, errors, and configs.
 - JSDoc is provided for all public APIs—hover for instant documentation in your editor.
@@ -405,7 +411,7 @@ MIT
 
 ---
 
-## UI Framework Recipes
+## 🖼️ UI Framework Recipes
 
 ### Vue Example
 
@@ -462,7 +468,7 @@ const update = () => {};
 
 ---
 
-## Testing
+## 🧪 Testing
 
 - All core logic is framework-agnostic and easily testable with Jest, Vitest, or your favorite runner.
 - Example:
@@ -477,7 +483,7 @@ test('validates required field', () => {
 
 ---
 
-## Roadmap
+## 🗺️ Roadmap
 
 - More built-in field types (file, image, relation, etc.)
 - More granular plugin hooks and events
@@ -487,7 +493,7 @@ test('validates required field', () => {
 
 ---
 
-## Support & Community
+## 🌍 Support & Community
 
 - [GitHub Issues](https://github.com/novincode/acf-kit/issues) — Bug reports & feature requests
 - [Discussions](https://github.com/novincode/acf-kit/discussions) — Ask questions, share ideas
