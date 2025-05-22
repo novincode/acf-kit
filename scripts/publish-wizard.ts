@@ -115,58 +115,120 @@ async function ensureChangesetsInteractive(allPackages: string[]) {
     log("🦋  No .changeset folder found. Initializing changesets...");
     run("pnpm exec changeset init");
   }
-  const hasUnreleasedChangeset =
+  let hasUnreleasedChangeset =
     require("fs").existsSync(changesetDir) &&
     readdirSync(changesetDir).some((f) => f.endsWith(".md"));
 
-  if (hasUnreleasedChangeset) {
-    log("📝 Found pending changeset(s).\n");
-    return;
-  }
-
-  log("ℹ️  No pending changesets found.");
-  const { pkgsToRelease } = await inquirer.prompt([
+  // Always ask if user wants to create a new release
+  const { wantRelease } = await inquirer.prompt([
     {
-      name: "pkgsToRelease",
-      type: "checkbox",
-      message: "No pending changesets found. Which packages have changes and need a release?",
-      choices: allPackages.filter((pkg) => !isPrivate(pkg)),
+      name: "wantRelease",
+      type: "confirm",
+      message: "Do you want to create a new release (bump version)?",
+      default: !hasUnreleasedChangeset,
     },
   ]);
-  if (!pkgsToRelease.length) {
-    log("❌ No packages selected for release. Exiting.");
-    process.exit(0);
-  }
 
-  for (const pkg of pkgsToRelease) {
-    const { bumpType, summary } = await inquirer.prompt([
+  if (wantRelease) {
+    const { pkgsToRelease } = await inquirer.prompt([
       {
-        name: "bumpType",
-        type: "list",
-        message: `Select version bump type for ${pkg}:`,
-        choices: ["patch", "minor", "major"],
-        default: "patch",
-      },
-      {
-        name: "summary",
-        type: "input",
-        message: `Enter a summary changelog message for ${pkg}:`,
-        validate: (input) => input.trim().length > 0 || "Summary cannot be empty",
+        name: "pkgsToRelease",
+        type: "checkbox",
+        message: "Which packages have changes and need a release?",
+        choices: allPackages.filter((pkg) => !isPrivate(pkg)),
       },
     ]);
-    const pkgName = getPackageJson(pkg).name;
-    run(
-      `pnpm exec changeset add --package ${pkgName} --type ${bumpType} --summary "${summary.replace(/"/g, '\"')}"`
-    );
+    if (!pkgsToRelease.length) {
+      log("❌ No packages selected for release. Exiting.");
+      process.exit(0);
+    }
+    for (const pkg of pkgsToRelease) {
+      const { bumpType, summary } = await inquirer.prompt([
+        {
+          name: "bumpType",
+          type: "list",
+          message: `Select version bump type for ${pkg}:`,
+          choices: ["patch", "minor", "major"],
+          default: "patch",
+        },
+        {
+          name: "summary",
+          type: "input",
+          message: `Enter a summary changelog message for ${pkg}:`,
+          validate: (input) => input.trim().length > 0 || "Summary cannot be empty",
+        },
+      ]);
+      const pkgName = getPackageJson(pkg).name;
+      run(
+        `pnpm exec changeset add --package ${pkgName} --type ${bumpType} --summary "${summary.replace(/"/g, '\"')}"`
+      );
+    }
+    log("✅ Changesets created.\n");
+    hasUnreleasedChangeset = true;
+  } else if (!hasUnreleasedChangeset) {
+    log("❌ No pending changesets and no new release requested. Exiting.");
+    process.exit(0);
   }
-  log("✅ Changesets created.\n");
 }
 
 async function main() {
   autoFixWorkspaceDeps();
 
   const allPackages = getAllPackages();
-  await ensureChangesetsInteractive(allPackages);
+
+  // Only prompt for changesets if there are no pending changesets
+  const pendingChangesets = getPendingChangesets();
+  if (pendingChangesets.length === 0) {
+    const { wantRelease } = await inquirer.prompt([
+      {
+        name: "wantRelease",
+        type: "confirm",
+        message: "Do you want to create a new release (bump version)?",
+        default: true,
+      },
+    ]);
+    if (wantRelease) {
+      const { pkgsToRelease } = await inquirer.prompt([
+        {
+          name: "pkgsToRelease",
+          type: "checkbox",
+          message: "Which packages have changes and need a release?",
+          choices: allPackages.filter((pkg) => !isPrivate(pkg)),
+        },
+      ]);
+      if (!pkgsToRelease.length) {
+        log("❌ No packages selected for release. Exiting.");
+        process.exit(0);
+      }
+      for (const pkg of pkgsToRelease) {
+        const { bumpType, summary } = await inquirer.prompt([
+          {
+            name: "bumpType",
+            type: "list",
+            message: `Select version bump type for ${pkg}:`,
+            choices: ["patch", "minor", "major"],
+            default: "patch",
+          },
+          {
+            name: "summary",
+            type: "input",
+            message: `Enter a summary changelog message for ${pkg}:`,
+            validate: (input) => input.trim().length > 0 || "Summary cannot be empty",
+          },
+        ]);
+        const pkgName = getPackageJson(pkg).name;
+        run(
+          `pnpm exec changeset add --package ${pkgName} --type ${bumpType} --summary "${summary.replace(/"/g, '\"')}"`
+        );
+      }
+      log("✅ Changesets created.\n");
+    } else {
+      log("❌ No pending changesets and no new release requested. Exiting.");
+      process.exit(0);
+    }
+  } else {
+    log("ℹ️  Pending changesets detected, skipping changeset creation.");
+  }
 
   log("Detected packages: " + allPackages.join(", "));
 
@@ -214,28 +276,10 @@ async function main() {
     }
   }
 
-  const { isVersioning } = await inquirer.prompt([
-    {
-      name: "isVersioning",
-      type: "confirm",
-      message: "📌 Do you want to bump versions now via Changesets?",
-      default: true,
-    },
-  ]);
-  if (isVersioning) {
-    log("📦 Running changeset version...");
-    run("pnpm changeset version");
-    run("pnpm install");
-  }
-
-  const { isDryRun } = await inquirer.prompt([
-    {
-      name: "isDryRun",
-      type: "confirm",
-      message: "🧪 Dry run publish? (simulate, don't actually publish)",
-      default: false,
-    },
-  ]);
+  // Always run changeset version and install before publish
+  log("📦 Running changeset version...");
+  run("pnpm changeset version");
+  run("pnpm install");
 
   for (const pkg of selectedPackages) {
     const pkgJson = getPackageJson(pkg);
@@ -245,7 +289,7 @@ async function main() {
     }
     const version = pkgJson.version;
     log(`🚀 Publishing ${pkg}@${version}...`);
-    const publishCmd = `pnpm publish --filter ${pkg} --access public --no-git-checks${isDryRun ? " --dry-run" : ""}`;
+    const publishCmd = `pnpm publish --filter ${pkg} --access public --no-git-checks`;
     try {
       run(publishCmd);
     } catch {

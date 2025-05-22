@@ -15,7 +15,9 @@
 	"dependencies": {
 		"next": "15.3.2",
 		"react": "^19.0.0",
-		"react-dom": "^19.0.0"
+		"react-dom": "^19.0.0",
+		"@acf-kit/core": "*",
+		"@acf-kit/react": "*"
 	},
 	"devDependencies": {
 		"@cloudflare/next-on-pages": "1",
