@@ -489,8 +489,8 @@ test('validates required field', () => {
 
 ## Support & Community
 
-- [GitHub Issues](https://github.com/shayan-m/acf-kit/issues) — Bug reports & feature requests
-- [Discussions](https://github.com/shayan-m/acf-kit/discussions) — Ask questions, share ideas
+- [GitHub Issues](https://github.com/novincode/acf-kit/issues) — Bug reports & feature requests
+- [Discussions](https://github.com/novincode/acf-kit/discussions) — Ask questions, share ideas
 - [Contributing Guide](./CONTRIBUTING.md) — How to get involved
 
 ---
