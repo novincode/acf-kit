@@ -3,23 +3,24 @@ import { EventEmitter } from "../utils/eventEmitter";
 
 /**
  * Field represents a single form field, its config, and current value.
- * @template T - The value type
- * @template S - The schema type
+ * @template TConfig - The field config type
+ * @template TValue - The value type for this field
+ * @template TValues - The full form value type
  */
-export class Field<T = unknown, S = unknown> {
-  readonly config: FieldConfig<T, S>;
-  value: T;
+export class Field<TConfig extends FieldConfig<TValues>, TValue, TValues> {
+  readonly config: TConfig;
+  value: TValue;
 
   // Async options state
-  options: any[] = [];
+  options: [] = [];
   loading: boolean = false;
-  loadError?: any;
+  loadError?: unknown;
 
   private _emitter = new EventEmitter();
 
-  constructor(config: FieldConfig<T, S>) {
+  constructor(config: TConfig, initialValue?: TValue) {
     this.config = config;
-    this.value = config.defaultValue as T;
+    this.value = initialValue !== undefined ? initialValue : (config.defaultValue as TValue);
   }
 
   onChange(listener: () => void) {
@@ -32,47 +33,20 @@ export class Field<T = unknown, S = unknown> {
     this._emitter.emit("change", undefined);
   }
 
-  setValue(value: T): void {
+  setValue(value: TValue): void {
     this.value = value;
     this.emitChange();
   }
 
-  getValue(): T {
+  getValue(): TValue {
     return this.value;
-  }
-
-  /**
-   * Fetch options (for select/relationship/autocomplete fields).
-   */
-  async fetchOptions(search = ""): Promise<any[]> {
-    if (typeof this.config.asyncOptions !== "function") return [];
-    this.loading = true;
-    this.loadError = undefined;
-    try {
-      const result = await this.config.asyncOptions(search);
-      this.options = result;
-      return result;
-    } catch (e) {
-      this.loadError = e;
-      return [];
-    } finally {
-      this.loading = false;
-    }
-  }
-
-  /**
-   * Fetch value by id (for relationship/autocomplete fields).
-   */
-  async fetchValue(id: any): Promise<any> {
-    if (typeof this.config.fetchValue !== "function") return undefined;
-    return this.config.fetchValue(id);
   }
 
   /**
    * Async validation for the field.
    * Returns error message (string) or undefined if valid.
    */
-  async validateAsync(values?: Record<string, any>): Promise<string | undefined> {
+  async validateAsync(values: TValues): Promise<string | undefined> {
     const { config } = this;
     const value = this.getValue();
 
@@ -81,8 +55,15 @@ export class Field<T = unknown, S = unknown> {
     }
 
     if (typeof config.validate === "function") {
-      const result = config.validate(value, values);
-      return result instanceof Promise ? await result : result;
+      try {
+        // Use type assertion to allow validation with the correct types
+        const validate = config.validate as (value: any, values: TValues) => string | undefined | Promise<string | undefined>;
+        const result = validate(value, values);
+        return result instanceof Promise ? await result : result;
+      } catch (error) {
+        console.error("Validation error:", error);
+        return "Validation error";
+      }
     }
 
     // Optional: Add schema validation support here if you use zod/yup

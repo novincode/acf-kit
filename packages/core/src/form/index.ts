@@ -8,14 +8,14 @@ import { EventEmitter } from "../utils/eventEmitter";
  * Form represents a collection of fields, their values, and errors.
  * Provides methods for value access, validation, and conditional logic.
  */
-export class Form {
-  readonly fields: FieldInstances = {};
+export class Form<TValues = Record<string, unknown>> {
+  readonly fields: FieldInstances<TValues> = {};
   private errors: FormErrors = {};
   private emitter = new EventEmitter<FormEvents>();
 
   constructor(config: FormConfig) {
     for (const fieldConfig of config.fields) {
-      this.fields[fieldConfig.name] = createField(fieldConfig.type, fieldConfig);
+      this.fields[fieldConfig.name] = createField(fieldConfig.type, fieldConfig) as Field<FieldConfig<TValues>, unknown, TValues>;
     }
   }
 
@@ -41,18 +41,19 @@ export class Form {
    * Get the value of a field.
    */
   getValue<T = unknown>(name: string): T | undefined {
-    return this.fields[name]?.getValue();
+    return this.fields[name]?.getValue() as T | undefined;
   }
 
   /**
    * Get all current values as a record.
    */
-  getValues(): Record<string, unknown> {
+  getValues(): TValues {
     const out: Record<string, unknown> = {};
     for (const name in this.fields) {
       out[name] = this.fields[name].getValue();
     }
-    return out;
+    // We need to cast to TValues to satisfy the type system
+    return out as unknown as TValues;
   }
 
   /**
@@ -101,8 +102,8 @@ export class Form {
   /**
    * Get a record of visible fields only.
    */
-  getVisibleFields(): Record<string, Field<any, any>> {
-    const result: Record<string, Field<any, any>> = {};
+  getVisibleFields(): FieldInstances<TValues> {
+    const result: FieldInstances<TValues> = {};
     for (const name in this.fields) {
       if (this.isFieldVisible(name)) {
         result[name] = this.fields[name];
@@ -114,9 +115,9 @@ export class Form {
   /**
    * Get all fields that are currently enabled (based on enabledIf).
    */
-  getEnabledFields(): FieldInstances {
+  getEnabledFields(): FieldInstances<TValues> {
     const values = this.getValues();
-    const enabled: FieldInstances = {};
+    const enabled: FieldInstances<TValues> = {};
     for (const name in this.fields) {
       const field = this.fields[name];
       const cond = field.config.enabledIf;
@@ -152,6 +153,6 @@ export class Form {
 }
 
 export type FormEvents = {
-  "field:change": { name: string; value: any };
+  "field:change": { name: string; value: unknown };
   "field:error": { name: string; error: string | undefined };
 };

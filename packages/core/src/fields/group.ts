@@ -1,29 +1,20 @@
-import type { FieldConfig, InferFormValues } from "./types";
+import type { FieldConfig, InferFormValues, GroupFieldConfig } from "./types";
 import { Field } from "./fieldBase";
 import { registerFieldType } from "./registry";
 import { Form } from "../form";
 
-// Explicit value shape for group fields
-export interface GroupFieldConfig<Fields extends readonly FieldConfig[] = FieldConfig[]> extends FieldConfig<InferFormValues<Fields>, any, InferFormValues<Fields>> {
-  type: "group";
-  fields: Fields;
-}
-
-export class GroupField<Fields extends readonly FieldConfig[] = FieldConfig[]> extends Field<InferFormValues<Fields>, any> {
+export class GroupField<TFields extends readonly FieldConfig<TValues>[], TValues> extends Field<GroupFieldConfig<TFields, TValues>, InferFormValues<TFields>, TValues> {
   form: Form;
-  constructor(config: GroupFieldConfig<Fields>) {
+  constructor(config: GroupFieldConfig<TFields, TValues>) {
     super(config);
     this.form = new Form({
-      fields: config.fields.map(f => ({
-        ...f,
-        defaultValue: config.defaultValue?.[f.name as keyof InferFormValues<Fields>]
-      }))
+      fields: [...config.fields] // Convert readonly array to mutable
     });
   }
-  getValue(): InferFormValues<Fields> {
-    return this.form.getValues() as InferFormValues<Fields>;
+  getValue(): InferFormValues<TFields> {
+    return this.form.getValues() as InferFormValues<TFields>;
   }
-  setValue(val: InferFormValues<Fields>) {
+  setValue(val: InferFormValues<TFields>): void {
     for (const name in val) {
       this.form.setValue(name, val[name]);
     }
@@ -31,4 +22,7 @@ export class GroupField<Fields extends readonly FieldConfig[] = FieldConfig[]> e
   }
 }
 
-registerFieldType("group", (config) => new GroupField(config));
+registerFieldType("group", ((config) => {
+  const typedConfig = config as GroupFieldConfig<any, any>;
+  return new GroupField<any, any>(typedConfig);
+}));

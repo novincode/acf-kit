@@ -1,4 +1,4 @@
-import type { FieldConfig } from "./types";
+import type { BaseFieldConfig } from "./types";
 import { Field } from "./fieldBase";
 import { fieldRegistry, registerFieldType } from "./registry";
 import { GroupField } from "./group";
@@ -7,19 +7,38 @@ import { FlexibleField } from "./flexible";
 
 // --- Modular built-in field registration for tree-shaking ---
 export function registerTextField() {
-  registerFieldType("text", (config: FieldConfig<string>) => new Field<string>(config));
+  registerFieldType("text", (config) => {
+    const typedConfig = config as BaseFieldConfig<"text", string, any>;
+    return new Field<BaseFieldConfig<"text", string, any>, string, any>(typedConfig);
+  });
 }
+
 export function registerNumberField() {
-  registerFieldType("number", (config: FieldConfig<number>) => new Field<number>(config));
+  registerFieldType("number", (config) => {
+    const typedConfig = config as BaseFieldConfig<"number", number, any>;
+    return new Field<BaseFieldConfig<"number", number, any>, number, any>(typedConfig);
+  });
 }
+
 export function registerBooleanField() {
-  registerFieldType("boolean", (config: FieldConfig<boolean>) => new Field<boolean>(config));
+  registerFieldType("boolean", (config) => {
+    const typedConfig = config as BaseFieldConfig<"boolean", boolean, any>;
+    return new Field<BaseFieldConfig<"boolean", boolean, any>, boolean, any>(typedConfig);
+  });
 }
+
 export function registerDateField() {
-  registerFieldType("date", (config: FieldConfig<Date | string>) => new Field<Date | string>(config));
+  registerFieldType("date", (config) => {
+    const typedConfig = config as BaseFieldConfig<"date", string, any>;
+    return new Field<BaseFieldConfig<"date", string, any>, string, any>(typedConfig);
+  });
 }
+
 export function registerTextareaField() {
-  registerFieldType("textarea", (config: FieldConfig<string>) => new Field<string>(config));
+  registerFieldType("textarea", (config) => {
+    const typedConfig = config as BaseFieldConfig<"textarea", string, any>;
+    return new Field<BaseFieldConfig<"textarea", string, any>, string, any>(typedConfig);
+  });
 }
 
 // --- Register all built-ins at once (for convenience) ---
@@ -29,7 +48,8 @@ export function registerAllBuiltins() {
   registerNumberField();
   registerBooleanField();
   registerDateField();
-  registerFieldType("group", (config) => new GroupField(config));
-  registerFieldType("repeater", (config) => new RepeaterField(config));
-  registerFieldType("flexible", (config) => new FlexibleField(config));
+  
+  // Group field is already registered in its own file
+  // Repeater field is already registered in its own file
+  // Flexible field is already registered in its own file
 }

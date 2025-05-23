@@ -7,55 +7,99 @@ export interface OptionType {
   [key: string]: unknown;
 }
 
-/**
- * Built-in and custom field types.
- */
-export type FieldType = "text" | "number" | "boolean" | "date" | string;
+// --- FieldTypeMap: extensible via declaration merging ---
+export interface FieldTypeMap {
+  text: string;
+  number: number;
+  boolean: boolean;
+  date: string;
+  textarea: string;
+  group: never; // handled below
+  repeater: never; // handled below
+  flexible: never; // handled below
+  // Extendable by user
+}
 
-// Utility: Infer value shape from a FieldConfig array
-export type InferFormValues<Fields extends readonly FieldConfig[]> = {
-  [K in Fields[number] as K["name"]]: K extends FieldConfig<infer T, any> ? T : unknown;
+export type FieldType = keyof FieldTypeMap;
+
+// --- Base config for all fields ---
+export interface BaseFieldConfig<TType extends FieldType, TValue, TValues> {
+  name: string;
+  type: TType;
+  label?: string;
+  required?: boolean;
+  defaultValue?: TValue;
+  visibleIf?: (values: TValues) => boolean;
+  enabledIf?: (values: TValues) => boolean;
+  validate?: (value: TValue, values: TValues) => string | undefined | Promise<string | undefined>;
+}
+
+// --- Primitive fields ---
+type PrimitiveFieldConfig<TType extends keyof FieldTypeMap, TValues> =
+  BaseFieldConfig<TType, FieldTypeMap[TType], TValues>;
+
+// --- Group field ---
+export interface GroupFieldConfig<TFields extends readonly FieldConfig<any>[], TValues> extends BaseFieldConfig<"group", InferFormValues<TFields>, TValues> {
+  type: "group";
+  fields: TFields;
+}
+
+// --- Repeater field ---
+export interface RepeaterFieldConfig<TFields extends readonly FieldConfig<any>[], TValues> extends BaseFieldConfig<"repeater", InferFormValues<TFields>[], TValues> {
+  type: "repeater";
+  fields: TFields;
+  minRows?: number;
+  maxRows?: number;
+}
+
+// --- Flexible field ---
+export interface FlexibleLayout<TFields extends readonly FieldConfig<any>[]> {
+  name: string;
+  label: string;
+  fields: TFields;
+}
+export interface FlexibleFieldConfig<TLayouts extends readonly FlexibleLayout<any>[], TValues> extends BaseFieldConfig<"flexible", Array<{ layout: TLayouts[number]["name"]; values: InferFormValues<TLayouts[number]["fields"]> }>, TValues> {
+  type: "flexible";
+  layouts: TLayouts;
+  minRows?: number;
+  maxRows?: number;
+}
+
+// --- Discriminated union for all fields ---
+export type FieldConfig<TValues = any> =
+  | PrimitiveFieldConfig<"text", TValues>
+  | PrimitiveFieldConfig<"number", TValues>
+  | PrimitiveFieldConfig<"boolean", TValues>
+  | PrimitiveFieldConfig<"date", TValues>
+  | PrimitiveFieldConfig<"textarea", TValues>
+  | GroupFieldConfig<any, TValues>
+  | RepeaterFieldConfig<any, TValues>
+  | FlexibleFieldConfig<any, TValues>;
+
+// --- Recursive value inference ---
+export type InferFormValues<Fields extends readonly FieldConfig<any>[]> = {
+  [K in Fields[number] as K["name"]]:
+    K extends GroupFieldConfig<infer GFields, any> ? InferFormValues<GFields> :
+    K extends RepeaterFieldConfig<infer RFields, any> ? InferFormValues<RFields>[] :
+    K extends FlexibleFieldConfig<infer L, any> ? { layout: L[number]["name"]; values: InferFormValues<L[number]["fields"]> }[] :
+    K extends BaseFieldConfig<any, infer V, any> ? V :
+    never;
 };
 
-// Strongly-typed ConditionFn and validate
-export type ConditionFn<TValues = any> = (values: TValues) => boolean;
-
-/**
- * FieldConfig describes the options for an individual field.
- * @template T - The value type of the field.
- * @template S - The schema type (optional, for zod or custom).
- *
- * - Use generics for value/config types everywhere.
- * - Extendable for plugins and custom field types.
- */
-export interface FieldConfig<T = unknown, S = unknown, TValues = any> {
-  name: string;
-  type: FieldType;
-  label?: string;
-  description?: string;
-  defaultValue?: T;
-  required?: boolean;
-  schema?: S; // For zod or custom schemas
-  /**
-   * Validation: can be sync or async.
-   */
-  validate?: (value: T, values?: TValues) => string | undefined | Promise<string | undefined>;
-  visibleIf?: ConditionFn<TValues>;
-  enabledIf?: ConditionFn<TValues>;
-  /**
-   * For fields like 'select', 'relationship', etc. Allows fetching options async (e.g. remote API).
-   * Signature: (search: string, values?: Record<string, any>) => Promise<OptionType[]>
-   */
-  asyncOptions?: (search: string, values?: TValues) => Promise<OptionType[]>;
-
-  /**
-   * For fields that want to fetch/display a value by ID (e.g. relationship/autocomplete).
-   * Signature: (id: any, values?: Record<string, any>) => Promise<any>
-   */
-  fetchValue?: (id: any, values?: TValues) => Promise<any>;
-  /**
-   * For static options (e.g. predefined list of values).
-   */
-  options?: OptionType[]; // For static options
-  [key: string]: unknown; // Extensible for plugins
+// --- defineFields: deeply type-safe, composable ---
+export function defineFields<T extends readonly FieldConfig<any>[]>(fields: T): T {
+  return fields;
 }
+
+// --- createFields: ergonomic factory for top-level fields ---
+export function createFields<TValues>() {
+  return <T extends readonly FieldConfig<TValues>[]>(fields: T) => fields;
+}
+
+// --- Extensibility: users can augment FieldTypeMap and FieldConfig union via declaration merging ---
+// Example:
+// declare module './types' {
+//   interface FieldTypeMap { color: string; }
+// }
+// export interface ColorFieldConfig<TValues> extends BaseFieldConfig<'color', string, TValues> { type: 'color'; format?: 'hex' | 'rgb'; }
+// Add to FieldConfig union as needed.

@@ -10,9 +10,10 @@ export type RenderFieldConfig = {
   width?: number | string;
   className?: string;
   style?: React.CSSProperties;
-  render?: (props: FieldComponentProps<any>) => React.ReactNode;
-  [key: string]: any;
-};
+  render?: (props: FieldComponentProps<any, any>) => React.ReactNode;
+  // Additional properties for field-specific configurations 
+  // Use Record instead of index signatures for better type safety
+} & Record<string, unknown>;
 
 // --- Advanced generic types for type-safe field/component mapping ---
 type FieldName<TForm extends Form> = keyof TForm["fields"] & string;
@@ -26,14 +27,17 @@ export type AcfFormRendererProps<TForm extends Form = Form> = {
 };
 
 // Add type guards for group, repeater, flexible
-function isGroupField(field: any): field is { form: Form } {
-  return !!field && typeof field === "object" && field.form instanceof Object && typeof field.form.getValues === "function";
+// Type guards with improved types
+import type { GroupField, RepeaterField, FlexibleField as FlexibleFieldType } from "@acf-kit/core";
+
+function isGroupField(field: unknown): field is GroupField<any, any> {
+  return !!field && typeof field === "object" && (field as any).form instanceof Object && typeof (field as any).form.getValues === "function";
 }
-function isRepeaterField(field: any): field is { forms: Form[] } {
-  return !!field && typeof field === "object" && Array.isArray(field.forms);
+function isRepeaterField(field: unknown): field is RepeaterField<any, any> {
+  return !!field && typeof field === "object" && Array.isArray((field as any).forms);
 }
-function isFlexibleField(field: any): field is { items: { layout: string; form: Form }[] } {
-  return !!field && typeof field === "object" && Array.isArray(field.items);
+function isFlexibleField(field: unknown): field is FlexibleFieldType<any, any> {
+  return !!field && typeof field === "object" && Array.isArray((field as any).items);
 }
 
 export function AcfFormRenderer<TForm extends Form = Form>({ form, mapping, fields, wrapper }: AcfFormRendererProps<TForm>) {
@@ -51,7 +55,8 @@ export function AcfFormRenderer<TForm extends Form = Form>({ form, mapping, fiel
         const field = fieldHook.field;
         const type = field.config.type as string;
         const Component = mapping[type];
-        const props: FieldComponentProps<any> = {
+        // Use a more specific type instead of any
+        const props: FieldComponentProps<any, any> = {
           field,
           value: fieldHook.value,
           set: fieldHook.set,

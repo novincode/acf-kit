@@ -1,5 +1,11 @@
 # @acf-kit/core
 
+## 1.2.0
+
+### Minor Changes
+
+- Bug fix, reactivity problem. refactor
+
 ## 1.1.2
 
 ### Patch Changes

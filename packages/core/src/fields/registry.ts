@@ -4,14 +4,17 @@ import { Field } from "./index";
 
 /**
  * A factory function that creates a Field instance from config.
- * @template T - The field type key in FieldTypeConfigMap
+ * The function is kept deliberately loose-typed at this level,
+ * and specific implementations provide the strong typing.
  */
-export type FieldFactory<T extends keyof FieldTypeConfigMap = string> = (
-  config: FieldTypeConfigMap[T]
-) => Field<any, any>;
+export type FieldFactory<
+  TConfig extends FieldConfig<any> = FieldConfig<any>,
+  TValue = unknown, 
+  TValues = Record<string, unknown>
+> = (config: TConfig) => Field<TConfig, TValue, TValues>;
 
 // Use a plain object for runtime, but enforce types at registration/creation
-export const fieldRegistry: { [key: string]: FieldFactory<any> } = {};
+export const fieldRegistry: { [key: string]: FieldFactory<FieldConfig<any>, unknown, any> } = {};
 
 /**
  * Register a new field type and its factory.
@@ -20,9 +23,9 @@ export const fieldRegistry: { [key: string]: FieldFactory<any> } = {};
  */
 export function registerFieldType<T extends keyof FieldTypeConfigMap>(
   type: T,
-  factory: FieldFactory<T>
+  factory: FieldFactory<FieldConfig<any>, unknown, any>
 ) {
-  fieldRegistry[type as string] = factory as FieldFactory<any>;
+  fieldRegistry[type as string] = factory;
 }
 
 /**
@@ -31,18 +34,18 @@ export function registerFieldType<T extends keyof FieldTypeConfigMap>(
  * @param type - The field type name
  * @param config - The config for this field type
  */
-export function createField<T extends keyof FieldTypeConfigMap>(
+export function createField<T extends keyof FieldTypeConfigMap, TValues = Record<string, unknown>>(
   type: T,
   config: FieldTypeConfigMap[T]
-): Field<any, any> {
+): Field<FieldConfig<TValues>, unknown, TValues> {
   const factory = fieldRegistry[type as string];
   if (!factory) throw new Error(`Field type "${type}" is not registered.`);
-  return factory(config);
+  return factory(config) as Field<FieldConfig<TValues>, unknown, TValues>;
 }
 
 /**
  * List all registered field types.
  */
 export function listFieldTypes(): FieldType[] {
-  return Object.keys(fieldRegistry);
+  return Object.keys(fieldRegistry) as FieldType[];
 }

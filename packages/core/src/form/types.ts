@@ -4,7 +4,7 @@ import type { InferFormValues } from "../fields/types";
 /**
  * The shape of a form's fields: map of field name to Field instance.
  */
-export type FieldInstances = Record<string, Field<any, any>>;
+export type FieldInstances<TValues = Record<string, unknown>> = Record<string, Field<FieldConfig<TValues>, unknown, TValues>>;
 
 /**
  * Errors keyed by field name.

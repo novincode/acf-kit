@@ -1,20 +1,23 @@
 import React, { useContext, useEffect, useState, useSyncExternalStore } from "react";
-import type { Field, Form } from "@acf-kit/core";
+import type { Field, Form, FieldConfig } from "@acf-kit/core";
 import { AcfFormContext } from "./context";
 
 // Infer value type from schema
-export type FieldValue<Schema, Name extends string> = Schema extends Record<Name, { value: infer V }> ? V : any;
-export type FieldInstance<Schema, Name extends string> = Field<FieldValue<Schema, Name>, any>;
+export type FieldValue<Schema, Name extends string> = Schema extends Record<Name, { value: infer V }> ? V : unknown;
+export type FieldInstance<Schema, Name extends string, TValues = Record<string, unknown>> = 
+  Field<FieldConfig<TValues>, FieldValue<Schema, Name>, TValues>;
 
 // Headless hook for a single field by name, with schema inference
+// TValues parameter ensures proper type constraints throughout the form
 export function useAcfField<
-  Schema = any,
-  Name extends string = string
+  Schema = Record<string, { value: unknown }>,
+  Name extends string = string,
+  TValues extends Record<string, unknown> = Record<string, unknown>
 >(fieldName: Name
 ): {
   value: FieldValue<Schema, Name>;
   set: (val: FieldValue<Schema, Name>) => void;
-  field: FieldInstance<Schema, Name>;
+  field: FieldInstance<Schema, Name, TValues>;
   error?: string;
 } {
   const form = useContext(AcfFormContext) as Form;

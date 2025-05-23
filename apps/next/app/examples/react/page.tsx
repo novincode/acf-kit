@@ -61,7 +61,7 @@ function MyTextarea(props: FieldComponentProps<any>) {
   );
 }
 
-function UsernamePreview() {
+function UsernamePreview(): React.ReactNode {
   const { value } = useAcfField("username");
   if (!value) return null;
   return <div style={{ color: "#888", fontSize: 13 }}>Hello, <b>{value}</b> 👋</div>;

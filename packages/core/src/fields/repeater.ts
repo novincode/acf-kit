@@ -1,51 +1,50 @@
-import type { FieldConfig, InferFormValues } from "./types";
+import type { FieldConfig, InferFormValues, RepeaterFieldConfig } from "./types";
 import { Field } from "./fieldBase";
 import { registerFieldType } from "./registry";
 import { Form } from "../form";
 
-// Explicit value shape for repeater fields
-// Strongly type repeater config and value
-export interface RepeaterFieldConfig<Fields extends readonly FieldConfig[] = FieldConfig[]> extends FieldConfig<InferFormValues<Fields>[], any, InferFormValues<Fields>> {
-  type: "repeater";
-  fields: Fields;
-  minRows?: number;
-  maxRows?: number;
-}
-
-export class RepeaterField<Fields extends readonly FieldConfig[] = FieldConfig[]> extends Field<InferFormValues<Fields>[], any> {
+export class RepeaterField<TFields extends readonly FieldConfig<TValues>[], TValues> extends Field<RepeaterFieldConfig<TFields, TValues>, InferFormValues<TFields>[], TValues> {
   forms: Form[];
-  constructor(config: RepeaterFieldConfig<Fields>) {
+  
+  constructor(config: RepeaterFieldConfig<TFields, TValues>) {
     super(config);
-    const fields = config.fields as unknown as FieldConfig[];
+    const fields = [...config.fields]; // Convert readonly to mutable
     this.forms = (config.defaultValue || []).map(
-      (row: InferFormValues<Fields>) => new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: row[f.name as keyof InferFormValues<Fields>] })) })
+      (row: InferFormValues<TFields>) => new Form({ fields })
     );
     this.enforceRowLimits();
   }
-  addRow(defaults: Partial<InferFormValues<Fields>> = {}) {
-    const fields = this.config.fields as unknown as FieldConfig[];
-    this.forms.push(new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: defaults[f.name as keyof InferFormValues<Fields>] })) }));
+  addRow() {
+    const fields = [...this.config.fields]; // Convert readonly to mutable
+    this.forms.push(new Form({ fields }));
     this.enforceRowLimits();
     this.emitChange();
   }
+  
   removeRow(index: number) {
     this.forms.splice(index, 1);
     this.enforceRowLimits();
     this.emitChange();
   }
-  getValue(): InferFormValues<Fields>[] {
-    return this.forms.map(form => ({ ...form.getValues() }) as InferFormValues<Fields>);
+  
+  getValue(): InferFormValues<TFields>[] {
+    return this.forms.map(form => ({ ...form.getValues() }) as InferFormValues<TFields>);
   }
-  setValue(value: InferFormValues<Fields>[]) {
-    const fields = this.config.fields as unknown as FieldConfig[];
-    this.forms = value.map((row: InferFormValues<Fields>) => new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: row[f.name as keyof InferFormValues<Fields>] })) }));
+  
+  setValue(value: InferFormValues<TFields>[]) {
+    const fields = [...this.config.fields]; // Convert readonly to mutable
+    this.forms = value.map(() => new Form({ fields }));
     this.enforceRowLimits();
     this.emitChange();
   }
+  
   private enforceRowLimits() {
     const { minRows, maxRows } = this.config;
     if (typeof minRows === "number" && this.forms.length < minRows) {
-      while (this.forms.length < minRows) this.addRow();
+      const fieldsArray = [...this.config.fields]; // Create a local copy to avoid recursive calls
+      while (this.forms.length < minRows) {
+        this.forms.push(new Form({ fields: fieldsArray }));
+      }
     }
     if (typeof maxRows === "number" && this.forms.length > maxRows) {
       this.forms.length = maxRows;
@@ -53,4 +52,7 @@ export class RepeaterField<Fields extends readonly FieldConfig[] = FieldConfig[]
   }
 }
 
-registerFieldType("repeater", (config) => new RepeaterField(config));
+registerFieldType("repeater", ((config) => {
+  const typedConfig = config as RepeaterFieldConfig<any, any>;
+  return new RepeaterField<any, any>(typedConfig);
+}));

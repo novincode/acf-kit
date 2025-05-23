@@ -3,44 +3,61 @@ import { Field } from "./fieldBase";
 import { registerFieldType } from "./registry";
 import { Form } from "../form";
 
-export interface FlexibleLayout<Fields extends readonly FieldConfig[] = FieldConfig[]> {
+export interface FlexibleLayout<Fields extends readonly FieldConfig<Record<string, unknown>>[]> {
   name: string;
   label: string;
   fields: Fields;
 }
 
-// Explicit value shape for flexible fields
-export interface FlexibleItemValue<Fields extends readonly FieldConfig[] = FieldConfig[]> {
+// Explicit value shape for flexible fields with stronger typing
+export interface FlexibleItemValue<Fields extends readonly FieldConfig<Record<string, unknown>>[]> {
   layout: string;
   values: InferFormValues<Fields>;
 }
 
-export interface FlexibleFieldConfig<Layouts extends readonly FlexibleLayout[] = FlexibleLayout[]> extends FieldConfig<FlexibleItemValue[], any, any> {
+export type FlexibleFieldConfig<Layouts extends readonly FlexibleLayout<FieldConfig<Record<string, unknown>>[]>[], TValues> = {
   type: "flexible";
+  name: string;
+  label?: string;
+  required?: boolean;
   layouts: Layouts;
   minRows?: number;
   maxRows?: number;
-}
+  defaultValue?: Array<FlexibleItemValue<Layouts[number]["fields"]>>;
+  visibleIf?: (values: TValues) => boolean;
+  validate?: (value: Array<FlexibleItemValue<Layouts[number]["fields"]>>, values: TValues) => string | undefined | Promise<string | undefined>;
+};
 
-export class FlexibleField<Layouts extends readonly FlexibleLayout[] = FlexibleLayout[]> extends Field<FlexibleItemValue[], any> {
-  items: { layout: string; form: Form }[];
+export class FlexibleField<TLayouts extends readonly FlexibleLayout<FieldConfig<Record<string, unknown>>[]>[], TValues> extends Field<
+  FlexibleFieldConfig<TLayouts, TValues>, 
+  Array<FlexibleItemValue<TLayouts[number]["fields"]>>, 
+  TValues
+> {
+  items: { layout: string; form: Form<Record<string, unknown>> }[];
 
-  constructor(config: FlexibleFieldConfig<Layouts>) {
+  constructor(config: FlexibleFieldConfig<TLayouts, TValues>) {
     super(config);
-    this.items = (config.defaultValue || []).map((item: FlexibleItemValue) => {
-      const layout = (config.layouts as unknown as FlexibleLayout[]).find((l: FlexibleLayout) => l.name === item.layout);
+    this.items = (config.defaultValue || []).map((item) => {
+      const layout = [...config.layouts].find((l) => l.name === item.layout);
       return {
         layout: item.layout,
-        form: new Form({ fields: layout?.fields.map((f: FieldConfig) => ({ ...f, defaultValue: item.values?.[f.name as keyof typeof item.values] })) || [] })
+        form: new Form<Record<string, unknown>>({ 
+          fields: layout?.fields ? [...layout.fields] : [] 
+        })
       };
     });
     this.enforceRowLimits();
   }
 
-  addItem(layoutName: string, defaults: Record<string, any> = {}) {
-    const layout = (this.config.layouts as unknown as FlexibleLayout[]).find((l: FlexibleLayout) => l.name === layoutName);
+  addItem(layoutName: string) {
+    const layout = [...this.config.layouts].find((l) => l.name === layoutName);
     if (!layout) throw new Error(`Unknown layout: ${layoutName}`);
-    this.items.push({ layout: layoutName, form: new Form({ fields: layout.fields.map((f: FieldConfig) => ({ ...f, defaultValue: defaults[f.name as keyof typeof defaults] })) }) });
+    this.items.push({ 
+      layout: layoutName, 
+      form: new Form<Record<string, unknown>>({ 
+        fields: layout.fields ? [...layout.fields] : [] 
+      }) 
+    });
     this.enforceRowLimits();
     this.emitChange();
   }
@@ -51,21 +68,21 @@ export class FlexibleField<Layouts extends readonly FlexibleLayout[] = FlexibleL
     this.emitChange();
   }
 
-  getValue(): FlexibleItemValue[] {
-    // Always return a new array reference
+  getValue(): Array<FlexibleItemValue<TLayouts[number]["fields"]>> {
     return this.items.map(item => ({
       layout: item.layout,
       values: { ...item.form.getValues() }
-    }));
+    } as FlexibleItemValue<TLayouts[number]["fields"]>));
   }
 
-  setValue(value: FlexibleItemValue[]) {
-    const config = this.config as FlexibleFieldConfig;
-    this.items = value.map((item: FlexibleItemValue) => {
-      const layout = (config.layouts as unknown as FlexibleLayout[]).find((l: FlexibleLayout) => l.name === item.layout);
+  setValue(value: Array<FlexibleItemValue<TLayouts[number]["fields"]>>) {
+    this.items = value.map((item) => {
+      const layout = [...this.config.layouts].find((l) => l.name === item.layout);
       return {
         layout: item.layout,
-        form: new Form({ fields: layout?.fields.map((f: FieldConfig) => ({ ...f, defaultValue: item.values?.[f.name] })) || [] })
+        form: new Form<Record<string, unknown>>({ 
+          fields: layout?.fields ? [...layout.fields] : [] 
+        })
       };
     });
     this.enforceRowLimits();
@@ -73,9 +90,24 @@ export class FlexibleField<Layouts extends readonly FlexibleLayout[] = FlexibleL
   }
 
   private enforceRowLimits() {
-    const { minRows, maxRows } = this.config as FlexibleFieldConfig;
+    const { minRows, maxRows } = this.config;
     if (typeof minRows === "number" && this.items.length < minRows) {
-      // Optionally, add default items or throw
+      const firstLayoutName = this.config.layouts[0]?.name;
+      if (firstLayoutName) {
+        while (this.items.length < minRows) {
+          const layout = [...this.config.layouts].find((l) => l.name === firstLayoutName);
+          if (layout) {
+            this.items.push({ 
+              layout: firstLayoutName, 
+              form: new Form<Record<string, unknown>>({ 
+                fields: layout.fields ? [...layout.fields] : [] 
+              }) 
+            });
+          } else {
+            break; // Avoid infinite loop if layout not found
+          }
+        }
+      }
     }
     if (typeof maxRows === "number" && this.items.length > maxRows) {
       this.items.length = maxRows;
@@ -83,4 +115,7 @@ export class FlexibleField<Layouts extends readonly FlexibleLayout[] = FlexibleL
   }
 }
 
-registerFieldType("flexible", (config) => new FlexibleField(config));
+registerFieldType("flexible", ((config) => {
+  const typedConfig = config as FlexibleFieldConfig<any, any>;
+  return new FlexibleField<any, any>(typedConfig);
+}));

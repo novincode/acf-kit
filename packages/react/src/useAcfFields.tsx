@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from "react";
 import { AcfFormContext } from "./context";
-import type { Field } from "@acf-kit/core";
+import type { Field, FieldConfig } from "@acf-kit/core";
 
 // Headless hook for multiple fields (for groups, repeaters, etc)
-export function useAcfFields<T = any>(fieldNames: string[]) {
+export function useAcfFields<T = unknown, TValues = Record<string, unknown>>(fieldNames: string[]) {
   const form = useContext(AcfFormContext);
   if (!form) throw new Error("useAcfFields must be used within an <AcfFormProvider>");
 
@@ -29,8 +29,8 @@ export function useAcfFields<T = any>(fieldNames: string[]) {
     setValues(newVals);
     setErrors(newErrs);
     // Subscribe to changes
-    const onChange = (e: { name: string; value: T }) => {
-      if (fieldNames.includes(e.name)) setValues(v => ({ ...v, [e.name]: e.value }));
+    const onChange = (e: { name: string; value: unknown }) => {
+      if (fieldNames.includes(e.name)) setValues(v => ({ ...v, [e.name]: e.value as T }));
     };
     const onError = (e: { name: string; error: string | undefined }) => {
       if (fieldNames.includes(e.name)) setErrors(er => ({ ...er, [e.name]: e.error }));
@@ -51,6 +51,6 @@ export function useAcfFields<T = any>(fieldNames: string[]) {
     values,
     set,
     errors,
-    fields: fieldNames.map(name => form.fields[name] as Field<T, any>),
+    fields: fieldNames.map(name => form.fields[name] as Field<FieldConfig<TValues>, T, TValues>),
   };
 }

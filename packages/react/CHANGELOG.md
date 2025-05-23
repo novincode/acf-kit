@@ -1,5 +1,16 @@
 # @acf-kit/react
 
+## 0.3.0
+
+### Minor Changes
+
+- Bug fix, reactivity problem. refactor
+
+### Patch Changes
+
+- Updated dependencies
+  - @acf-kit/core@1.2.0
+
 ## 0.2.2
 
 ### Patch Changes
