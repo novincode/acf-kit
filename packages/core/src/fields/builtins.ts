@@ -1,6 +1,9 @@
 import type { FieldConfig } from "./types";
-import { Field } from "./index";
-import { registerFieldType } from "./registry";
+import { Field } from "./fieldBase";
+import { fieldRegistry, registerFieldType } from "./registry";
+import { GroupField } from "./group";
+import { RepeaterField } from "./repeater";
+import { FlexibleField } from "./flexible";
 
 // --- Modular built-in field registration for tree-shaking ---
 export function registerTextField() {
@@ -26,12 +29,7 @@ export function registerAllBuiltins() {
   registerNumberField();
   registerBooleanField();
   registerDateField();
+  registerFieldType("group", (config) => new GroupField(config));
+  registerFieldType("repeater", (config) => new RepeaterField(config));
+  registerFieldType("flexible", (config) => new FlexibleField(config));
 }
-
-// --- Advanced fields ---
-import "./repeater";
-import "./group";
-import "./flexible";
-
-// Optional: Export these for tree-shaking, code splitting, or re-registration if needed.
-export {};

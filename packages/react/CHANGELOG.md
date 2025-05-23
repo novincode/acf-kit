@@ -1,5 +1,17 @@
 # @acf-kit/react
 
+## 0.2.2
+
+### Patch Changes
+
+- c5acf66: Textarea added
+- 1ba21ca: Patch
+- Bug fixes
+- Updated dependencies [c5acf66]
+- Updated dependencies [1ba21ca]
+- Updated dependencies
+  - @acf-kit/core@1.1.2
+
 ## 0.2.1
 
 ### Patch Changes

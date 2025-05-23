@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "echo 'run dev inside individual packages'",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter './packages/**' build",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish",

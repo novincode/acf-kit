@@ -1,6 +1,6 @@
 {
   "name": "acf-kit",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "private": false,
   "description": "Install all acf-kit packages at once",
   "keywords": [

@@ -20,10 +20,10 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      // "@acf-kit/core": ["../../packages/core/src"],
-      // "@acf-kit/core/*": ["../../packages/core/src/*"],
-      // "@acf-kit/react": ["../../packages/react/src"],
-      // "@acf-kit/react/*": ["../../packages/react/src/*"]
+      "@acf-kit/core": ["../../packages/core/src"],
+      "@acf-kit/core/*": ["../../packages/core/src/*"],
+      "@acf-kit/react": ["../../packages/react/src"],
+      "@acf-kit/react/*": ["../../packages/react/src/*"]
     },
     "types": [
         "./env.d.ts",

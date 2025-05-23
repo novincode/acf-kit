@@ -6,6 +6,9 @@ export * from "./fields/types";
 export * from "./fields/index";
 export * from "./fields/registry";
 export * from "./fields/builtins";
+export { GroupField } from "./fields/group";
+export { RepeaterField } from "./fields/repeater";
+export { FlexibleField } from "./fields/flexible";
 
 // Form
 export * from "./form/types";

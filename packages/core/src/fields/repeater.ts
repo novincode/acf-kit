@@ -1,49 +1,47 @@
-import type { FieldConfig } from "./types";
-import { Field } from "./index";
+import type { FieldConfig, InferFormValues } from "./types";
+import { Field } from "./fieldBase";
 import { registerFieldType } from "./registry";
 import { Form } from "../form";
 
 // Explicit value shape for repeater fields
-export interface RepeaterFieldConfig extends FieldConfig<Record<string, unknown>[], any> {
+// Strongly type repeater config and value
+export interface RepeaterFieldConfig<Fields extends readonly FieldConfig[] = FieldConfig[]> extends FieldConfig<InferFormValues<Fields>[], any, InferFormValues<Fields>> {
   type: "repeater";
-  fields: FieldConfig[];
+  fields: Fields;
   minRows?: number;
   maxRows?: number;
 }
 
-class RepeaterField extends Field<Record<string, unknown>[], any> {
+export class RepeaterField<Fields extends readonly FieldConfig[] = FieldConfig[]> extends Field<InferFormValues<Fields>[], any> {
   forms: Form[];
-
-  constructor(config: RepeaterFieldConfig) {
+  constructor(config: RepeaterFieldConfig<Fields>) {
     super(config);
-    const fields = config.fields as FieldConfig[];
+    const fields = config.fields as unknown as FieldConfig[];
     this.forms = (config.defaultValue || []).map(
-      (row: Record<string, unknown>) => new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: row[f.name as string] })) })
+      (row: InferFormValues<Fields>) => new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: row[f.name as keyof InferFormValues<Fields>] })) })
     );
     this.enforceRowLimits();
   }
-
-  addRow(defaults: Record<string, any> = {}) {
-    const fields = this.config.fields as FieldConfig[];
-    this.forms.push(new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: defaults[f.name as string] })) }));
+  addRow(defaults: Partial<InferFormValues<Fields>> = {}) {
+    const fields = this.config.fields as unknown as FieldConfig[];
+    this.forms.push(new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: defaults[f.name as keyof InferFormValues<Fields>] })) }));
     this.enforceRowLimits();
+    this.emitChange();
   }
-
   removeRow(index: number) {
     this.forms.splice(index, 1);
     this.enforceRowLimits();
+    this.emitChange();
   }
-
-  getValue(): Record<string, unknown>[] {
-    return this.forms.map(form => form.getValues());
+  getValue(): InferFormValues<Fields>[] {
+    return this.forms.map(form => ({ ...form.getValues() }) as InferFormValues<Fields>);
   }
-
-  setValue(value: Record<string, unknown>[]) {
-    const fields = this.config.fields as FieldConfig[];
-    this.forms = value.map((row: Record<string, unknown>) => new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: row[f.name as string] })) }));
+  setValue(value: InferFormValues<Fields>[]) {
+    const fields = this.config.fields as unknown as FieldConfig[];
+    this.forms = value.map((row: InferFormValues<Fields>) => new Form({ fields: fields.map((f: FieldConfig) => ({ ...f, defaultValue: row[f.name as keyof InferFormValues<Fields>] })) }));
     this.enforceRowLimits();
+    this.emitChange();
   }
-
   private enforceRowLimits() {
     const { minRows, maxRows } = this.config;
     if (typeof minRows === "number" && this.forms.length < minRows) {

@@ -11,7 +11,7 @@ export type FieldFactory<T extends keyof FieldTypeConfigMap = string> = (
 ) => Field<any, any>;
 
 // Use a plain object for runtime, but enforce types at registration/creation
-const fieldRegistry: { [key: string]: FieldFactory<any> } = {};
+export const fieldRegistry: { [key: string]: FieldFactory<any> } = {};
 
 /**
  * Register a new field type and its factory.

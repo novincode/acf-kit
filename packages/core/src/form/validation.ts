@@ -14,7 +14,7 @@ export function validateField<T = unknown>(field: Field<T, any>): string | undef
   }
   if (typeof config.validate === "function") {
     // Only handle sync validation here
-    const result = config.validate(value);
+    const result = config.validate(value, undefined);
     if (result instanceof Promise) {
       // Warn: async validation should use validateAsync
       return undefined;

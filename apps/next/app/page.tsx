@@ -16,7 +16,7 @@ export default function Home() {
   const [form] = useState(() => new Form({
     fields: [
       { name: "username", type: "text", required: true },
-      { name: "age", type: "number", validate: v => v < 0 ? "Negative age!" : undefined }
+      { name: "age", type: "number", validate: (v: unknown) => typeof v === "number" && v < 0 ? "Negative age!" : undefined }
     ]
   }));
   const [_, setRerender] = useState(0);

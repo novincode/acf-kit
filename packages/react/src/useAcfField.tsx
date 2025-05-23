@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useSyncExternalStore } from "react";
 import type { Field, Form } from "@acf-kit/core";
 import { AcfFormContext } from "./context";
 
@@ -19,29 +19,25 @@ export function useAcfField<
 } {
   const form = useContext(AcfFormContext) as Form;
   if (!form) throw new Error("useAcfField must be used within an <AcfFormProvider>");
-  const initialValue = form.getValue(fieldName);
-  const [value, setValue] = useState<FieldValue<Schema, Name>>(initialValue !== undefined ? initialValue : null as any);
-  const initialError = form.getErrors()[fieldName];
-  const [error, setError] = useState<string | undefined>(initialError);
+  const field = form.fields[fieldName] as FieldInstance<Schema, Name>;
+  if (!field) {
+    throw new Error(`Field '${fieldName}' not found in form.`);
+  }
 
-  useEffect(() => {
-    const newValue = form.getValue(fieldName);
-    setValue(newValue !== undefined ? newValue : null as any);
-    setError(form.getErrors()[fieldName]);
-    // Subscribe to live updates
-    const onChange = (e: { name: string; value: FieldValue<Schema, Name> }) => {
-      if (e.name === fieldName) setValue(e.value !== undefined ? e.value : null as any);
+  // --- Reactivity: subscribe to field changes ---
+  const valueRef = React.useRef(field.getValue());
+
+  const subscribe = (onStoreChange: () => void) => {
+    const handler = () => {
+      valueRef.current = field.getValue();
+      onStoreChange();
     };
-    const onError = (e: { name: string; error: string | undefined }) => {
-      if (e.name === fieldName) setError(e.error);
-    };
-    form.on("field:change", onChange);
-    form.on("field:error", onError);
-    return () => {
-      form.off("field:change", onChange);
-      form.off("field:error", onError);
-    };
-  }, [form, fieldName]);
+    field.onChange(handler);
+    return () => field.offChange(handler);
+  };
+  const getSnapshot = () => valueRef.current;
+
+  useSyncExternalStore(subscribe, getSnapshot, () => undefined);
 
   const set = (val: FieldValue<Schema, Name>) => {
     form.setValue(fieldName, val);
@@ -49,9 +45,9 @@ export function useAcfField<
   };
 
   return {
-    value,
+    value: field.getValue(),
     set,
-    field: form.fields[fieldName] as FieldInstance<Schema, Name>,
-    error,
+    field,
+    error: form.getFieldError(fieldName),
   };
 }

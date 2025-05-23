@@ -10,6 +10,7 @@ import {
   useAcfField,
 } from "@acf-kit/react";
 import type { FieldComponentProps } from "@acf-kit/react";
+import { InferFormValues, FieldConfig } from "@acf-kit/core/fields/types";
 
 registerAllBuiltins();
 
@@ -72,51 +73,53 @@ const mapping: FieldComponentMap = {
   textarea: MyTextarea,
 };
 
-const form = new Form({
-  fields: [
-    { name: "username", type: "text", label: "Username", required: true },
-    { name: "bio", type: "textarea", label: "Bio" },
-    { name: "age", type: "number", label: "Age", validate: (v: number) => v < 0 ? "Negative age!" : undefined },
-    {
-      name: "profile",
-      type: "group",
-      label: "Profile",
-      fields: [
-        { name: "website", type: "text", label: "Website" },
-        { name: "location", type: "text", label: "Location" },
-      ],
-    },
-    {
-      name: "tags",
-      type: "repeater",
-      label: "Tags",
-      fields: [
-        { name: "label", type: "text", label: "Tag Label" },
-      ],
-    },
-    {
-      name: "content",
-      type: "flexible",
-      label: "Content Blocks",
-      layouts: [
-        {
-          name: "textBlock",
-          label: "Text Block",
-          fields: [
-            { name: "text", type: "textarea", label: "Text" },
-          ],
-        },
-        {
-          name: "imageBlock",
-          label: "Image Block",
-          fields: [
-            { name: "url", type: "text", label: "Image URL" },
-          ],
-        },
-      ],
-    },
-  ],
-});
+const fields: FieldConfig[] = [
+  { name: "username", type: "text", label: "Username", required: true },
+  { name: "bio", type: "textarea", label: "Bio" },
+  { name: "age", type: "number", label: "Age", validate: (v: unknown) => typeof v === "number" && v < 0 ? "Negative age!" : undefined },
+  {
+    name: "profile",
+    type: "group",
+    label: "Profile",
+    fields: [
+      { name: "website", type: "text", label: "Website" },
+      { name: "location", type: "text", label: "Location" },
+    ],
+  },
+  {
+    name: "tags",
+    type: "repeater",
+    label: "Tags",
+    fields: [
+      { name: "label", type: "text", label: "Tag Label" },
+    ],
+  },
+  {
+    name: "content",
+    type: "flexible",
+    label: "Content Blocks",
+    layouts: [
+      {
+        name: "textBlock",
+        label: "Text Block",
+        fields: [
+          { name: "text", type: "textarea", label: "Text" },
+        ],
+      },
+      {
+        name: "imageBlock",
+        label: "Image Block",
+        fields: [
+          { name: "url", type: "text", label: "Image URL" },
+        ],
+      },
+    ],
+  },
+];
+
+type FormValues = InferFormValues<typeof fields>;
+
+const form = new Form({ fields });
 
 export default function ReactAcfKitExample() {
   const [rerender, setRerender] = useState(0);

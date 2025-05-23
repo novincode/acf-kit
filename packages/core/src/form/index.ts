@@ -142,6 +142,13 @@ export class Form {
     this.errors = errors;
     return errors;
   }
+
+  /**
+   * Get the error message for a field, if any.
+   */
+  getFieldError(name: string): string | undefined {
+    return this.errors[name];
+  }
 }
 
 export type FormEvents = {

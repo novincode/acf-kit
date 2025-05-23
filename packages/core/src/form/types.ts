@@ -1,4 +1,5 @@
 import type { Field, FieldConfig } from "../fields";
+import type { InferFormValues } from "../fields/types";
 
 /**
  * The shape of a form's fields: map of field name to Field instance.
@@ -13,12 +14,14 @@ export type FormErrors = Record<string, string | undefined>;
 /**
  * Config for initializing a form.
  */
-export interface FormConfig {
-  fields: FieldConfig<any, any>[];
+export interface FormConfig<Fields extends readonly FieldConfig[] = FieldConfig[]> {
+  fields: Fields;
   // Extendable for future (validation, plugins, etc)
 }
 
 /**
- * Function signature for conditional logic.
+ * Utility: Infer value shape from FormConfig
  */
-export type ConditionFn = (values: Record<string, unknown>) => boolean;
+export type FormValuesFromConfig<C extends FormConfig> = C["fields"] extends readonly FieldConfig[]
+  ? InferFormValues<C["fields"]>
+  : never;

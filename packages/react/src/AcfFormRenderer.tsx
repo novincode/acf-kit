@@ -2,6 +2,7 @@ import React from "react";
 import type { Form } from "@acf-kit/core";
 import { useAcfField } from "./useAcfField";
 import type { FieldComponentMap, FieldComponentProps } from "./mapping";
+import { AcfFormProvider } from "./context";
 
 export type RenderFieldConfig = {
   name: string;
@@ -24,7 +25,7 @@ export type AcfFormRendererProps<TForm extends Form = Form> = {
   wrapper?: (field: React.ReactNode, config: RenderFieldConfig, index: number) => React.ReactNode;
 };
 
-// Type guards for nested field types
+// Add type guards for group, repeater, flexible
 function isGroupField(field: any): field is { form: Form } {
   return !!field && typeof field === "object" && field.form instanceof Object && typeof field.form.getValues === "function";
 }
@@ -41,63 +42,66 @@ export function AcfFormRenderer<TForm extends Form = Form>({ form, mapping, fiel
     typeof f === "string" ? { name: f } : f
   );
 
-  // Filter out invisible/disabled fields
-  const visibleFieldConfigs = fieldConfigs.filter(cfg => {
-    const name = cfg.name as FieldName<TForm>;
-    return form.isFieldVisible(name) && form.isFieldEnabled(name);
-  });
-
   return (
     <>
-      {visibleFieldConfigs.map((config, idx) => {
+      {fieldConfigs.map((config, idx) => {
         const { name, label, width, className, style, render, ...rest } = config;
-        const field = form.fields[name as FieldName<TForm>];
-        if (!field) return <div key={name}>Field "{name}" not found.</div>;
+        // Always call the hook for every field
+        const fieldHook = useAcfField(name as string);
+        const field = fieldHook.field;
         const type = field.config.type as string;
         const Component = mapping[type];
-
-        if (!Component && !render) {
-          return <div key={name}>No component mapped for field type: {type}</div>;
-        }
-
-        // --- Strongly type the hook and props ---
-        const fieldHook = useAcfField(name as string);
         const props: FieldComponentProps<any> = {
-          field: fieldHook.field,
+          field,
           value: fieldHook.value,
           set: fieldHook.set,
           error: fieldHook.error,
           name,
           ...rest,
         };
-
+        // Only render UI if field is visible
+        if (!form.isFieldVisible(name as FieldName<TForm>)) return null;
         let rendered: React.ReactNode;
         if (render) {
           rendered = render(props);
-        } else if (type === "group" && isGroupField(field)) {
-          rendered = (
-            <AcfFormRenderer form={field.form} mapping={mapping} />
-          );
-        } else if (type === "repeater" && isRepeaterField(field)) {
-          rendered = field.forms.map((subForm: Form, i: number) => {
-            // Prefer a stable key if available (e.g., subForm._acfKey)
-            const key = (subForm as any)._acfKey || i;
-            return <AcfFormRenderer key={key} form={subForm} mapping={mapping} />;
-          });
-        } else if (type === "flexible" && isFlexibleField(field)) {
-          rendered = field.items.map((item, i) => {
-            // TODO: Use a stable key if available (e.g., item.id) in the future
-            return (
-              <div key={i}>
-                <div>{item.layout}</div>
-                <AcfFormRenderer form={item.form} mapping={mapping} />
-              </div>
+        } else if (Component) {
+          if (type === "group" && isGroupField(field)) {
+            rendered = (
+              <Component {...props}>
+                <AcfFormProvider form={field.form}>
+                  <AcfFormRenderer form={field.form} mapping={mapping} />
+                </AcfFormProvider>
+              </Component>
             );
-          });
+          } else if (type === "repeater" && isRepeaterField(field)) {
+            rendered = (
+              <Component {...props}>
+                {field.forms.map((subForm: Form, i: number) => (
+                  <AcfFormProvider key={i} form={subForm}>
+                    <AcfFormRenderer form={subForm} mapping={mapping} />
+                  </AcfFormProvider>
+                ))}
+              </Component>
+            );
+          } else if (type === "flexible" && isFlexibleField(field)) {
+            rendered = (
+              <Component {...props}>
+                {field.items.map((item, i) => (
+                  <div key={i}>
+                    <div>{item.layout}</div>
+                    <AcfFormProvider form={item.form}>
+                      <AcfFormRenderer form={item.form} mapping={mapping} />
+                    </AcfFormProvider>
+                  </div>
+                ))}
+              </Component>
+            );
+          } else {
+            rendered = <Component {...props} />;
+          }
         } else {
-          rendered = <Component {...props} />;
+          rendered = <div>No component mapped for field type: {type}</div>;
         }
-
         rendered = (
           <div
             key={name}
@@ -111,7 +115,6 @@ export function AcfFormRenderer<TForm extends Form = Form>({ form, mapping, fiel
             {rendered}
           </div>
         );
-
         return wrapper ? wrapper(rendered, config, idx) : rendered;
       })}
     </>
