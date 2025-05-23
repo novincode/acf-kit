@@ -1,5 +1,18 @@
 # @acf-kit/core
 
+## 1.3.1
+
+### Patch Changes
+
+- Better Readme added
+- Bug fixes, Type safety
+
+## 1.3.0
+
+### Minor Changes
+
+- Refactored and better type safety
+
 ## 1.2.0
 
 ### Minor Changes

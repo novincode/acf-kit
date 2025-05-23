@@ -1,59 +1,23 @@
 # @acf-kit/react
 
-[![npm version](https://img.shields.io/npm/v/@acf-kit/react.svg)](https://npmjs.com/package/@acf-kit/react)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://www.typescriptlang.org/)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](../core/LICENSE)
+> **Headless, type-safe React bindings for [acf-kit/core](../core)**
 
 ---
 
-Headless, type-safe React bindings for [acf-kit/core](../core)
+## Why @acf-kit/react?
+
+- **Headless & UI-agnostic:** Bring your own UI, design system, and layout.
+- **TypeScript-first:** All hooks, context, and renderers are fully typed and infer your schema.
+- **Composable:** Use hooks, context, and a flexible recursive renderer for any form structure.
+- **Advanced Field Support:** Works with all core field types—group, repeater, flexible, and custom fields.
+- **Maximum DX:** Ergonomic APIs, JSDoc, and full type inference for field values, errors, and configs.
+- **Extensible:** Map any field type to your own React components, override rendering, and extend as needed.
 
 ---
 
-## 📚 Table of Contents
+## Installation
 
-- [✨ Introduction](#-introduction)
-- [🌟 Features](#-features)
-- [⬇️ Installation](#-installation)
-- [⚡ Quick Start](#-quick-start)
-- [🏗️ Concepts & Architecture](#-concepts--architecture)
-- [🧩 API Reference](#-api-reference)
-- [🧑‍🍳 Recipes & Usage](#-recipes--usage)
-- [💡 TypeScript & DX Tips](#-typescript--dx-tips)
-- [🖼️ Example: Custom Field Components](#-example-custom-field-components)
-- [🧪 Testing](#-testing)
-- [🗺️ Roadmap](#-roadmap)
-- [🌍 Support & Community](#-support--community)
-
----
-
-## ✨ Introduction
-
-`@acf-kit/react` provides headless, type-safe, and composable React bindings for [`acf-kit/core`](../core). It lets you build fully custom, ergonomic, and type-safe forms in React, powered by the robust logic and validation of the core engine.
-
-- **Headless**: Bring your own UI, layout, and design system.
-- **Composable**: Use hooks, context, and a flexible renderer for any form structure.
-- **Type-safe**: All hooks and components are fully typed for maximum DX.
-- **Extensible**: Map any field type to your own React components.
-
----
-
-## 🌟 Features
-
-- Headless hooks for field logic (`useAcfField`, `useAcfFields`)
-- Context provider for form state (`AcfFormProvider`)
-- Flexible, recursive renderer (`AcfFormRenderer`) for rapid prototyping or production
-- Component mapping for custom UIs and field types
-- Full support for nested, repeater, group, and flexible fields
-- Live field updates via event emitter
-- Maximum DX: pass custom field objects, layout, styles, and even override rendering
-- Fully typed API, powered by acf-kit/core
-
----
-
-## ⬇️ Installation
-
-```bash
+```sh
 pnpm add @acf-kit/core @acf-kit/react react
 # or
 npm install @acf-kit/core @acf-kit/react react
@@ -63,58 +27,36 @@ yarn add @acf-kit/core @acf-kit/react react
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ```tsx
 import {
   AcfFormProvider,
   AcfFormRenderer,
   FieldComponentMap,
-  RenderFieldConfig
+  useAcfField
 } from "@acf-kit/react";
-import { MyInput, MySelect } from "./fields";
-import { form } from "./myFormInstance";
+import { Form } from "@acf-kit/core";
+import { registerAllBuiltins } from "@acf-kit/core/fields/builtins";
 
-// 1. Map field types to React components
+registerAllBuiltins();
+
+const form = new Form({
+  fields: [
+    { name: "username", type: "text", required: true },
+    { name: "age", type: "number" }
+  ]
+});
+
 const mapping: FieldComponentMap = {
-  text: MyInput,
-  select: MySelect,
+  text: ({ value, set }) => <input value={value || ""} onChange={e => set(e.target.value)} />,
+  number: ({ value, set }) => <input type="number" value={value ?? ""} onChange={e => set(Number(e.target.value))} />,
 };
 
-// 2. Describe your fields and layout
-const fields: RenderFieldConfig[] = [
-  { name: "title", label: "Title", width: "100%", className: "title" },
-  { name: "type", label: "Type", width: "50%", className: "type" },
-  {
-    name: "description",
-    label: "Description",
-    width: "50%",
-    render: ({ value, set }) => (
-      <textarea value={value || ""} onChange={e => set(e.target.value)} />
-    ),
-  },
-];
-
-// 3. Render the form
 export function MyForm() {
   return (
     <AcfFormProvider form={form}>
-      <div className="grid grid-cols-12 gap-4">
-        <AcfFormRenderer
-          form={form}
-          mapping={mapping}
-          fields={fields}
-          wrapper={(field, config) => (
-            <div
-              key={config.name}
-              style={{ gridColumn: `span ${config.width === "50%" ? 6 : 12}` }}
-              className={config.className}
-            >
-              {field}
-            </div>
-          )}
-        />
-      </div>
+      <AcfFormRenderer form={form} mapping={mapping} />
     </AcfFormProvider>
   );
 }
@@ -122,43 +64,38 @@ export function MyForm() {
 
 ---
 
-## 🏗️ Concepts & Architecture
+## Concepts & Architecture
 
-- **Form Context**: Wrap your form in `AcfFormProvider` to provide context to all hooks and components.
-- **Hooks**: Use `useAcfField` or `useAcfFields` for headless field logic, value, and error state.
-- **Component Mapping**: Map field types (e.g. `text`, `select`) to your own React components for full UI control.
-- **Renderer**: Use `AcfFormRenderer` for rapid prototyping, recursive/nested rendering, and layout control.
-- **Custom Rendering**: Pass a `render` function or override any field’s rendering for maximum flexibility.
+- **Form Context:** Wrap your form in `AcfFormProvider` to provide context to all hooks and components.
+- **Hooks:** Use `useAcfField` or `useAcfFields` for headless field logic, value, and error state.
+- **Component Mapping:** Map field types (e.g. `text`, `select`) to your own React components for full UI control.
+- **Renderer:** Use `AcfFormRenderer` for rapid prototyping, recursive/nested rendering, and layout control.
+- **Custom Rendering:** Pass a `render` function or override any field’s rendering for maximum flexibility.
+- **Full Support for Advanced Fields:** Group, repeater, and flexible fields are handled recursively and type-safely.
 
 ---
 
-## 🧩 API Reference
+## API Reference
 
-### `AcfFormProvider`
+### `<AcfFormProvider form={form}>`
 Wraps your form and provides context to all hooks/components.
-
-```tsx
-<AcfFormProvider form={form}>
-  {/* ... */}
-</AcfFormProvider>
-```
 
 ### `useAcfField(fieldName)`
 Headless hook for a single field. Returns value, setter, field instance, and error.
 
 ```tsx
-const { value, set, field, error } = useAcfField("title");
+const { value, set, field, error } = useAcfField("username");
 ```
 
 ### `useAcfFields(fieldNames)`
 Headless hook for multiple fields at once. Returns an array of field states.
 
 ```tsx
-const fields = useAcfFields(["title", "type"]);
-fields[0].value; // value for "title"
+const fields = useAcfFields(["username", "age"]);
+fields[0].value; // value for "username"
 ```
 
-### `AcfFormRenderer`
+### `<AcfFormRenderer />`
 Flexible, recursive renderer for forms. Handles nested, group, repeater, and flexible fields.
 
 Props:
@@ -175,12 +112,11 @@ Type for field-level layout and rendering config. Supports custom renderers, lay
 
 ---
 
-## 🧑‍🍳 Recipes & Usage
+## Recipes & Usage
 
 ### Custom Field Components
 
 ```tsx
-// MyInput.tsx
 export function MyInput({ value, set, error }) {
   return (
     <div>
@@ -196,7 +132,7 @@ export function MyInput({ value, set, error }) {
 `AcfFormRenderer` automatically handles group, repeater, and flexible fields recursively. You can also use hooks directly for custom rendering:
 
 ```tsx
-const { value, set } = useAcfField("seo"); // group field
+const { value, set } = useAcfField("profile"); // group field
 // value is an object of nested values
 ```
 
@@ -231,20 +167,20 @@ const fields = [
 
 ---
 
-## 💡 TypeScript & DX Tips
+## TypeScript & DX Tips
 
 - All hooks and components are fully typed. Use generics for maximum type safety.
 - Use `FieldComponentMap` and `RenderFieldConfig` for type-safe mapping and layout.
 - Hover any exported symbol for instant JSDoc and type info in your editor.
 - Use `useAcfField<YourSchema, "fieldName">("fieldName")` for advanced type inference.
 - All field values, errors, and configs are type-safe and autocompleted.
+- Works seamlessly with React 18+ and strict TypeScript settings.
 
 ---
 
-## 🖼️ Example: Custom Field Components
+## Example: Custom Field Components
 
 ```tsx
-// MySelect.tsx
 export function MySelect({ value, set, error, field }) {
   return (
     <div>
@@ -261,7 +197,7 @@ export function MySelect({ value, set, error, field }) {
 
 ---
 
-## 🧪 Testing
+## Testing
 
 - All logic is headless and easily testable with Jest, Vitest, or your favorite runner.
 - Example:
@@ -282,7 +218,7 @@ expect(result.current.value).toBe("Hello");
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - More built-in field components for rapid prototyping
 - Storybook and live examples
@@ -292,7 +228,7 @@ expect(result.current.value).toBe("Hello");
 
 ---
 
-## 🌍 Support & Community
+## Support & Community
 
 - [GitHub Issues](https://github.com/novincode/acf-kit/issues) — Bug reports & feature requests
 - [Discussions](https://github.com/novincode/acf-kit/discussions) — Ask questions, share ideas

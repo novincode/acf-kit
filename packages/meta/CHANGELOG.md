@@ -1,5 +1,26 @@
 # acf-kit
 
+## 1.0.0
+
+### Major Changes
+
+- Better Readme added
+
+### Patch Changes
+
+- Updated dependencies
+- Updated dependencies
+  - @acf-kit/react@1.0.0
+  - @acf-kit/core@1.3.1
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies
+  - @acf-kit/core@1.3.0
+  - @acf-kit/react@0.4.0
+
 ## 0.0.8
 
 ### Patch Changes

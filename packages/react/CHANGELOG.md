@@ -1,5 +1,29 @@
 # @acf-kit/react
 
+## 1.0.0
+
+### Major Changes
+
+- Bug fixes, Type safety
+
+### Patch Changes
+
+- Better Readme added
+- Updated dependencies
+- Updated dependencies
+  - @acf-kit/core@1.3.1
+
+## 0.4.0
+
+### Minor Changes
+
+- Refactored and better type safety
+
+### Patch Changes
+
+- Updated dependencies
+  - @acf-kit/core@1.3.0
+
 ## 0.3.0
 
 ### Minor Changes
