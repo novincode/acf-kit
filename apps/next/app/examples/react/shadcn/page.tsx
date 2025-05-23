@@ -1,70 +1,20 @@
 "use client";
 import * as React from "react";
 import { useState } from "react";
-import { Form } from "@acf-kit/core";
-import type { Form as FormType } from "@acf-kit/core";
-import { registerAllBuiltins } from "@acf-kit/core/fields/builtins";
 import {
+  Form,
+  registerAllBuiltins,
+  createFields,
   AcfFormProvider,
   AcfFormRenderer,
   FieldComponentMap,
   useAcfField,
+  FieldComponentProps
 } from "@acf-kit/react";
-import type { FieldComponentProps } from "@acf-kit/react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { shadcnFieldMapping } from "./map-components";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { createFields } from "@acf-kit/core/fields/types";
 
 registerAllBuiltins();
-
-// Type-safe component definitions
-function ShadcnInput(props: FieldComponentProps<any, any>): React.ReactNode {
-  const { value, set, error, field } = props;
-  return (
-    <div className="mb-4">
-      <Input
-        value={(value as string) || ""}
-        onChange={e => set(e.target.value as any)}
-        placeholder={field?.config?.label || ""}
-        aria-invalid={!!error}
-      />
-      {error && <div className="text-destructive text-xs mt-1">{error}</div>}
-    </div>
-  );
-}
-
-function ShadcnNumber(props: FieldComponentProps<any, any>): React.ReactNode {
-  const { value, set, error, field } = props;
-  return (
-    <div className="mb-4">
-      <Input
-        type="number"
-        value={(value as number) ?? ""}
-        onChange={e => set(Number(e.target.value) as any)}
-        placeholder={field?.config?.label || ""}
-        aria-invalid={!!error}
-      />
-      {error && <div className="text-destructive text-xs mt-1">{error}</div>}
-    </div>
-  );
-}
-
-function ShadcnTextarea(props: FieldComponentProps<any, any>): React.ReactNode {
-  const { value, set, error, field } = props;
-  return (
-    <div className="mb-4">
-      <Textarea
-        value={(value as string) || ""}
-        onChange={e => set(e.target.value as any)}
-        placeholder={field?.config?.label || ""}
-        aria-invalid={!!error}
-      />
-      {error && <div className="text-destructive text-xs mt-1">{error}</div>}
-    </div>
-  );
-}
 
 function UsernamePreview(): React.ReactNode {
   const { value } = useAcfField<any, any>("username");
@@ -72,77 +22,8 @@ function UsernamePreview(): React.ReactNode {
   return <div className="text-muted-foreground text-sm mb-2">Hello, <b>{value as string}</b> 👋</div>;
 }
 
-// Type guards for field types
-function isRepeaterField(field: unknown): field is { addRow: () => void } {
-  return typeof field === "object" && field !== null && "addRow" in field && typeof (field as any).addRow === "function";
-}
 
-function isFlexibleField(field: unknown): field is { addLayout: (name: string) => void, config: { layouts: any[] } } {
-  return typeof field === "object" && 
-         field !== null && 
-         "addLayout" in field && 
-         typeof (field as any).addLayout === "function" && 
-         "config" in field &&
-         typeof (field as any).config === "object" &&
-         (field as any).config !== null &&
-         "layouts" in (field as any).config &&
-         Array.isArray((field as any).config.layouts);
-}
-
-function ShadcnGroup(props: FieldComponentProps<any, any> & { children?: React.ReactNode }): React.ReactNode {
-  const { field, name, children } = props;
-  return (
-    <Card className="mb-4 p-4">
-      <div className="font-semibold mb-2">{field?.config?.label || name}</div>
-      {children}
-    </Card>
-  );
-}
-
-function ShadcnRepeater(props: FieldComponentProps<any, any> & { children?: React.ReactNode }): React.ReactNode {
-  const { field, name, children } = props;
-  return (
-    <Card className="mb-4 p-4">
-      <div className="font-semibold mb-2 flex items-center justify-between">
-        {field?.config?.label || name}
-        {isRepeaterField(field) && (
-          <Button type="button" size="sm" onClick={() => field.addRow()}>Add</Button>
-        )}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </Card>
-  );
-}
-
-function ShadcnFlexible(props: FieldComponentProps<any, any> & { children?: React.ReactNode }): React.ReactNode {
-  const { field, name, children } = props;
-  return (
-    <Card className="mb-4 p-4">
-      <div className="font-semibold mb-2 flex items-center justify-between">
-        {field?.config?.label || name}
-        {isFlexibleField(field) && (
-          <div className="flex gap-2">
-            {field.config.layouts.map((layout: any) => (
-              <Button key={layout.name} type="button" size="sm" onClick={() => field.addLayout(layout.name)}>
-                Add {layout.label}
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="space-y-4">{children}</div>
-    </Card>
-  );
-}
-
-const mapping: FieldComponentMap = {
-  text: ShadcnInput,
-  textarea: ShadcnTextarea,
-  number: ShadcnNumber,
-  group: ShadcnGroup,
-  repeater: ShadcnRepeater,
-  flexible: ShadcnFlexible,
-};
+const mapping: FieldComponentMap = shadcnFieldMapping;
 
 // Define the form values type structure
 type FormValues = {
@@ -268,9 +149,7 @@ export default function ShadcnAcfKitExample(): React.ReactNode {
           <p className="text-muted-foreground mb-6">
             This example demonstrates the fully type-safe ACF-Kit core with shadcn/ui components.
           </p>
-          
           <UsernamePreview />
-          
           <AcfFormRenderer
             form={form as any}
             mapping={mapping}
@@ -284,7 +163,6 @@ export default function ShadcnAcfKitExample(): React.ReactNode {
               </div>
             )}
           />
-          
           <div className="flex gap-4 mt-8">
             <Button type="submit" className="flex-1">
               Submit Form
